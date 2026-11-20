@@ -40,7 +40,8 @@ Tamanho padrão **380 × 520 px** (redimensionável, tamanho lembrado). Sem barr
 
 ### 2.1 Linha de item
 
-- Altura: texto 1–3 linhas (56–88 px); imagem 72 px (miniatura até 96 × 56, `object-fit: cover` com cantos 4 px).
+- Altura fixa de **68 px** para todas as linhas, exigida pela lista virtualizada (HIST-002). O texto ocupa até 3 linhas de 18 px; imagens mostram miniatura de 96 × 56 (`object-fit: cover`, cantos de 4 px).
+- A seleção pelo mouse acompanha só **movimento** do ponteiro (`mousemove`). Como o popup abre sob o cursor, `mouseenter` selecionaria a linha que apareceu debaixo de um ponteiro parado, e não o primeiro item.
 - Hover/foco: fundo sutil + ações rápidas à direita (📌 fixar, 🗑 excluir) — visíveis só no hover/foco para reduzir ruído.
 - Texto em fonte de interface; se detectado como código/linha de comando (heurística simples: começa com `$`, contém `{`/`;` em proporção alta), usar **Cascadia Mono** na prévia — `C`, opcional.
 - URLs exibidas com ícone 🔗; cores normais (sem sublinhado).
@@ -66,6 +67,8 @@ Tamanho padrão **380 × 520 px** (redimensionável, tamanho lembrado). Sem barr
 
 - Pré-criada e oculta na inicialização (PERF-001).
 - Abre perto do caret/mouse (HK-005), com animação de entrada 120 ms (fade + 4 px slide), desativada com movimento reduzido.
+- Aberto pela bandeja, a janela em foco é a própria barra de tarefas. Nesse caso, a janela alvo da colagem é a primeira janela de aplicativo visível na ordem de empilhamento (z-order), que é aquela em que o usuário estava trabalhando.
+- Menu "⋯" do cabeçalho: Pausar/Retomar captura e Limpar histórico (com confirmação). "Configurações" entra no M6.
 - Fecha ao perder foco, `Esc` ou após colar.
 - Ao reabrir: busca limpa, filtro "Tudo", foco no 1º item.
 

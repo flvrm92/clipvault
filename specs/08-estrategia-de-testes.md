@@ -60,6 +60,7 @@
 
 ### Win32
 - `crates/infrastructure/tests/win32_clipboard.rs`: testes `#[ignore]` contra o clipboard real, executados em série: `cargo test -p clipvault-infrastructure --test win32_clipboard -- --ignored --test-threads=1`. Uma sessão salva e restaura o texto do usuário. Cobrem leitura/escrita de texto e imagem, DIB, flags de privacidade, dono, listener e o fluxo ponta a ponta até o SQLite. Rodam no CI (`windows-latest`).
+- `crates/infrastructure/tests/win32_paste.rs`: colagem ponta a ponta (clipboard + foco + `SendInput`) numa janela de edição real. Fica num **binário de teste próprio** porque o Windows só deixa trocar a janela em primeiro plano a um processo que já está em primeiro plano. Um processo recém-iniciado tem esse direito para a primeira janela, e o teste reproduz a situação do app real: o "popup" do processo está em foco e cola em outra janela.
 
 ### Desempenho
 - `crates/infrastructure/tests/perf.rs`: testes `#[ignore]` que medem o p95 de PERF-002..004 com os adaptadores reais. Rodar em release na máquina de referência antes de cada release: `cargo test -p clipvault-infrastructure --release --test perf -- --ignored --nocapture`. Ficam fora do CI porque runners compartilhados não dão tempos estáveis.

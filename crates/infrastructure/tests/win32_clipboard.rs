@@ -105,7 +105,16 @@ fn utf16(text: &str) -> Vec<u8> {
 /// Writes arbitrary formats, keeping `owner` as the clipboard owner.
 fn write_raw(owner: &RawOwner, formats: &[(u32, Vec<u8>)]) {
     unsafe {
-        OpenClipboard(Some(owner.0)).unwrap();
+        // The Windows clipboard history service may briefly hold the clipboard after a change.
+        let mut opened = OpenClipboard(Some(owner.0));
+        for _ in 0..20 {
+            if opened.is_ok() {
+                break;
+            }
+            std::thread::sleep(Duration::from_millis(20));
+            opened = OpenClipboard(Some(owner.0));
+        }
+        opened.unwrap();
         EmptyClipboard().unwrap();
         for (format, bytes) in formats {
             let memory = GlobalAlloc(GMEM_MOVEABLE, bytes.len().max(1)).unwrap();
@@ -374,4 +383,24 @@ fn cap_010_end_to_end_clipvault_own_writes_are_not_recorded() {
 
     let history = pipeline.stop();
     assert_eq!(texts(&history), Vec::<String>::new());
+}
+
+#[test]
+#[ignore = "touches keyboard focus"]
+fn pst_005_restoring_a_closed_window_fails() {
+    use clipvault_application::ports::{FocusTracker, ScreenPoint, TargetWindow, WindowHandle};
+    use clipvault_infrastructure::win32::Win32FocusTracker;
+
+    let owner = RawOwner::new();
+    let handle = WindowHandle::new(owner.0.0 as isize);
+    drop(owner);
+
+    let result = Win32FocusTracker.restore(&TargetWindow {
+        handle,
+        caret: None,
+        cursor: ScreenPoint::default(),
+        elevated: false,
+    });
+
+    assert!(result.is_err());
 }

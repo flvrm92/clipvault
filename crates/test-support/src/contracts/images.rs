@@ -1,6 +1,6 @@
 //! Contract of [`ImageStore`] (ADR-0004, REL-002, RET-005).
 
-use clipvault_application::ports::ImageStore;
+use clipvault_application::ports::{ImageStore, PortError};
 use clipvault_domain::hash::ContentHash;
 use clipvault_domain::image::{FileKey, thumbnail_size};
 
@@ -41,6 +41,18 @@ pub fn saving_twice_keeps_one_image(store: &dyn ImageStore) {
     assert_eq!(store.keys().unwrap(), vec![key("a")]);
 }
 
+/// PST-003: saved images are loaded back unchanged.
+pub fn saved_images_load_back_unchanged(store: &dyn ImageStore) {
+    store.save(&key("a"), &pixels(5, 3)).unwrap();
+
+    assert_eq!(store.load(&key("a")).unwrap(), pixels(5, 3));
+}
+
+/// Loading a missing image is `NotFound`.
+pub fn loading_a_missing_image_is_not_found(store: &dyn ImageStore) {
+    assert_eq!(store.load(&key("missing")), Err(PortError::NotFound));
+}
+
 /// An empty store lists nothing.
 pub fn empty_store_lists_nothing(store: &dyn ImageStore) {
     assert_eq!(store.keys().unwrap(), Vec::<FileKey>::new());
@@ -57,6 +69,8 @@ macro_rules! image_store_contract {
             remove_deletes_and_is_idempotent,
             saving_twice_keeps_one_image,
             empty_store_lists_nothing,
+            saved_images_load_back_unchanged,
+            loading_a_missing_image_is_not_found,
         );
     };
 }

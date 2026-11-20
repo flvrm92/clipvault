@@ -143,6 +143,17 @@ impl ImageStore for FsImageStore {
         remove_if_present(&self.thumbnail_path(key))
     }
 
+    fn load(&self, key: &FileKey) -> Result<ImagePixels, PortError> {
+        let path = self.image_path(key);
+        if !path.exists() {
+            return Err(PortError::NotFound);
+        }
+        let decoded = image::open(&path).map_err(|e| image_error(&e))?.to_rgba8();
+        let (width, height) = decoded.dimensions();
+        ImagePixels::new(width, height, decoded.into_raw())
+            .map_err(|e| PortError::Storage(format!("invalid stored image: {e}")))
+    }
+
     fn keys(&self) -> Result<Vec<FileKey>, PortError> {
         let read = |dir: &Path| fs::read_dir(dir).map_err(|e| io_error("listing images", &e));
         let mut keys = Vec::new();

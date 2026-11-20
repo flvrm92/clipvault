@@ -6,6 +6,7 @@
 mod clipboard;
 mod clock;
 mod events;
+mod focus;
 mod history;
 mod images;
 mod settings;
@@ -16,6 +17,7 @@ pub use clipboard::{
 };
 pub use clock::Clock;
 pub use events::{AppEvent, EventPublisher};
+pub use focus::{FocusTracker, KeystrokeSender, ScreenPoint, TargetWindow, WindowHandle};
 pub use history::{ClearScope, HistoryQuery, HistoryRepository, KindFilter, Page, Removal};
 pub use images::{ImageStore, StoredImage};
 pub use settings::SettingsRepository;

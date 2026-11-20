@@ -24,6 +24,8 @@
   --warning: #9a6700;
   --danger: #c4314b;
   --focus-ring: #4b3fd1;
+  --warning-surface: #fff4ce;
+  --popup-background: var(--surface);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -41,6 +43,7 @@
     --warning: #f5c451;
     --danger: #ff8a9b;
     --focus-ring: #a9a3ff;
+    --warning-surface: #433519;
   }
 }
 
@@ -58,17 +61,31 @@
   --warning: #f5c451;
   --danger: #ff8a9b;
   --focus-ring: #a9a3ff;
+  --warning-surface: #433519;
+}
+
+/* THM-002: translucent panel over the Acrylic backdrop; solid otherwise. */
+:root[data-backdrop='acrylic'] {
+  --popup-background: color-mix(in srgb, var(--surface) 72%, transparent);
+}
+
+@media (forced-colors: active) {
+  :root {
+    --popup-background: Canvas;
+  }
 }
 
 * {
   box-sizing: border-box;
 }
 
+/* The window is transparent: the popup panel paints the background (rounded corners). */
 html,
 body {
   margin: 0;
   height: 100%;
-  background: var(--surface);
+  overflow: hidden;
+  background: transparent;
   color: var(--text-primary);
   font-family: var(--font-ui);
   font-size: 14px;

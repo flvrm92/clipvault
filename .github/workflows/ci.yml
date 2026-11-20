@@ -36,8 +36,14 @@ jobs:
       - run: cargo fmt --all --check
       - run: cargo clippy --workspace --all-targets --locked
       - run: cargo test --workspace --locked
+      # ts-rs regenerates the UI bindings during the tests; committed files must match.
+      - name: UI bindings are up to date
+        shell: bash
+        run: test -z "$(git status --porcelain -- ui/src/api/bindings)" || (git status -- ui/src/api/bindings && exit 1)
       # Win32 integration tests against the real clipboard (ignored locally by default).
       - run: cargo test -p clipvault-infrastructure --test win32_clipboard --locked -- --ignored --test-threads=1
+      # Separate binary: it must own the foreground window (see the file docs).
+      - run: cargo test -p clipvault-infrastructure --test win32_paste --locked -- --ignored
       - run: cargo xtask check-arch
       - run: cargo xtask trace-reqs
 
@@ -66,7 +72,7 @@ jobs:
       - run: cargo llvm-cov -p clipvault-infrastructure --locked --summary-only --ignore-filename-regex "win32" --fail-under-lines 85
       # Win32 adapters, measured with their real-clipboard tests (specs/08 §5: ≥ 60%).
       - run: >-
-          cargo llvm-cov -p clipvault-infrastructure --test win32_clipboard --locked --summary-only
+          cargo llvm-cov -p clipvault-infrastructure --test win32_clipboard --test win32_paste --locked --summary-only
           --ignore-filename-regex "crates[\\/](domain|application|test-support)[\\/]|infrastructure[\\/]src[\\/](sqlite|images|dib|retry|clock|lib\.rs)"
           --fail-under-lines 60 -- --ignored --test-threads=1
       # The composition root (app) is covered by E2E tests, not by line coverage (specs/08 §5).

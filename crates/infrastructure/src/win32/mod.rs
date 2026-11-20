@@ -6,9 +6,16 @@
 #![allow(unsafe_code)] // FFI boundary; see module docs.
 
 mod clipboard;
+mod focus;
+mod input;
 mod listener;
 mod owner;
+mod process;
+mod theme;
 mod window;
 
 pub use clipboard::Win32Clipboard;
+pub use focus::Win32FocusTracker;
+pub use input::Win32KeystrokeSender;
 pub use listener::ClipboardListener;
+pub use theme::{SystemAppearance, system_appearance};

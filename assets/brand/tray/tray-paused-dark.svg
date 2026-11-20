@@ -1,0 +1,7 @@
+<!-- PLACEHOLDER (M4): paused tray glyph for a dark taskbar (TRAY-003); final art in M6 -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <rect x="12" y="10" width="40" height="48" rx="8" fill="none" stroke="#FFFFFF" stroke-width="5" stroke-opacity="0.55"/>
+  <rect x="22" y="4" width="20" height="12" rx="4" fill="#FFFFFF" fill-opacity="0.55"/>
+  <rect x="23" y="25" width="6" height="21" rx="2" fill="#FFFFFF"/>
+  <rect x="35" y="25" width="6" height="21" rx="2" fill="#FFFFFF"/>
+</svg>

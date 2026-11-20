@@ -4,6 +4,8 @@
 pub enum AppEvent {
     /// History items were added, changed or removed.
     HistoryChanged,
+    /// Capture was paused or resumed (CAP-008, TRAY-003).
+    CaptureStateChanged,
 }
 
 /// Publishes [`AppEvent`]s.

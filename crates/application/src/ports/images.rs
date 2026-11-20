@@ -29,6 +29,13 @@ pub trait ImageStore: Send + Sync {
     /// [`PortError::Storage`] on failure.
     fn remove(&self, key: &FileKey) -> Result<(), PortError>;
 
+    /// Decodes the original image (to paste it, PST-003).
+    ///
+    /// # Errors
+    /// [`PortError::NotFound`] when no image is stored under `key`; [`PortError::Storage`]
+    /// when it cannot be read or decoded.
+    fn load(&self, key: &FileKey) -> Result<ImagePixels, PortError>;
+
     /// Keys of every stored original image (RET-005).
     ///
     /// # Errors

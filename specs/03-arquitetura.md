@@ -149,6 +149,10 @@ Componentes de apoio em `application::capture`:
 - **Protocolo `clip://`:** serve imagens/miniaturas por ID validado (SEC-003).
 - **Plugins:** `tauri-plugin-single-instance` (TRAY-004).
 
+- **Popup** (`popup.rs`): ao abrir, captura a janela alvo (`FocusTracker`) e posiciona a janela com a regra pura `application::placement` (HK-005): perto do caret, senão do ponteiro, sempre dentro da área de trabalho do monitor. Fecha ao perder o foco (PST-007).
+- **Colar** (`paste_item`): o comando é assíncrono. Ele esconde o popup e roda `PasteItem` fora da thread principal, para que o Windows processe o `hide` antes de o foco voltar à janela alvo.
+- **Contrato com a UI:** os DTOs geram tipos TypeScript (`ts-rs`) em `ui/src/api/bindings/`. O CI falha se os arquivos versionados estiverem desatualizados.
+
 ### 3.5 `ui`
 
 - **Svelte 5 + TypeScript + Vite** (ADR-0006). Sem lógica de negócio: stores refletem estado vindo do backend.

@@ -7,6 +7,7 @@
 
 pub mod capture;
 mod error;
+pub mod placement;
 pub mod ports;
 pub mod use_cases;
 

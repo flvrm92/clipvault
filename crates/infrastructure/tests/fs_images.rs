@@ -38,6 +38,10 @@ impl ImageStore for TempFsStore {
         self.store.remove(key)
     }
 
+    fn load(&self, key: &FileKey) -> Result<ImagePixels, PortError> {
+        self.store.load(key)
+    }
+
     fn keys(&self) -> Result<Vec<FileKey>, PortError> {
         self.store.keys()
     }
