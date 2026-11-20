@@ -47,6 +47,29 @@ impl ListHistory {
     }
 }
 
+/// Reads one item in full, e.g. for the preview (HIST-008).
+pub struct GetItem {
+    history: Arc<dyn HistoryRepository>,
+}
+
+impl GetItem {
+    /// Builds the use case.
+    pub fn new(history: Arc<dyn HistoryRepository>) -> Self {
+        Self { history }
+    }
+
+    /// The item with `id`.
+    ///
+    /// # Errors
+    /// [`crate::ports::PortError::NotFound`] or storage failures.
+    pub fn execute(&self, id: ClipId) -> Result<ClipItem, AppError> {
+        Ok(self
+            .history
+            .get(id)?
+            .ok_or(crate::ports::PortError::NotFound)?)
+    }
+}
+
 /// Pins an unpinned item or unpins a pinned one (HIST-005).
 pub struct TogglePin {
     history: Arc<dyn HistoryRepository>,

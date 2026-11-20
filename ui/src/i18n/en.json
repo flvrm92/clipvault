@@ -1,12 +1,77 @@
 {
   "app": {
-    "name": "ClipVault",
-    "tagline": "Your clipboard history, safe and one shortcut away.",
-    "foundation": "Foundation build. Clipboard capture arrives in the next milestones."
+    "name": "ClipVault"
   },
   "tray": {
     "tooltip": "ClipVault",
-    "open": "Open ClipVault",
+    "tooltipPaused": "ClipVault — capture paused",
+    "open": "Open history",
+    "pause": "Pause capture",
+    "resume": "Resume capture",
     "quit": "Quit"
+  },
+  "notification": {
+    "copiedOnly": "Copied. Paste with Ctrl+V."
+  },
+  "popup": {
+    "title": "Clipboard history",
+    "search": {
+      "placeholder": "Search history…",
+      "label": "Search history"
+    },
+    "filter": {
+      "all": "All",
+      "text": "Text",
+      "images": "Images",
+      "pinned": "Pinned",
+      "label": "Filter"
+    },
+    "list": {
+      "label": "Clipboard history"
+    },
+    "empty": {
+      "title": "Nothing here yet",
+      "body": "Copy something to get started",
+      "shortcut": "Open with {shortcut}"
+    },
+    "noResults": "No results for \"{query}\"",
+    "noItemsInFilter": "No items in this filter",
+    "paused": {
+      "message": "Capture paused",
+      "resume": "Resume"
+    },
+    "item": {
+      "image": "Image {width} × {height}",
+      "pin": "Pin",
+      "unpin": "Unpin",
+      "delete": "Delete",
+      "pinned": "Pinned"
+    },
+    "menu": {
+      "label": "More options",
+      "pause": "Pause capture",
+      "resume": "Resume capture",
+      "clear": "Clear history"
+    },
+    "clear": {
+      "confirm": "Remove all unpinned items?",
+      "keepPinned": "Pinned items will be kept.",
+      "confirmAction": "Clear",
+      "cancel": "Cancel"
+    },
+    "toast": {
+      "deleted": "Item deleted",
+      "undo": "Undo",
+      "error": "Something went wrong. Please try again."
+    },
+    "hints": {
+      "paste": "Paste",
+      "plain": "Plain text",
+      "pin": "Pin",
+      "delete": "Delete"
+    },
+    "preview": {
+      "close": "Close preview"
+    }
   }
 }

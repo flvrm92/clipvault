@@ -9,15 +9,20 @@ use std::time::Duration;
 use clipvault_application::capture::{CaptureWorker, Debouncer, OwnWriteRegistry, WorkerMessage};
 use clipvault_application::ports::{AppEvent, EventPublisher};
 use clipvault_application::use_cases::{
-    CaptureClipboard, CaptureDependencies, PurgeExpired, ReconcileImages, RetentionDependencies,
+    CaptureClipboard, CaptureDependencies, PasteDependencies, PurgeExpired, ReconcileImages,
+    RetentionDependencies,
 };
 use clipvault_infrastructure::clock::SystemClock;
 use clipvault_infrastructure::images::FsImageStore;
 use clipvault_infrastructure::sqlite::{
     Database, DatabaseError, SqliteHistoryRepository, SqliteSettingsRepository,
 };
-use clipvault_infrastructure::win32::{ClipboardListener, Win32Clipboard};
-use tauri::{AppHandle, Emitter, Runtime};
+use clipvault_infrastructure::win32::{
+    ClipboardListener, Win32Clipboard, Win32FocusTracker, Win32KeystrokeSender,
+};
+use tauri::{AppHandle, Emitter, Wry};
+
+use crate::tray;
 
 /// Interval of the background retention purge (RET-004).
 const PURGE_INTERVAL: Duration = Duration::from_hours(1);
@@ -33,15 +38,19 @@ pub enum StartupError {
     Images(#[from] std::io::Error),
 }
 
-/// Publishes application events to the webview (pattern: Observer — specs/04 §P-07).
-pub struct TauriEvents<R: Runtime> {
-    app: AppHandle<R>,
+/// Publishes application events to the webview and the tray (pattern: Observer — specs/04 §P-07).
+pub struct TauriEvents {
+    app: AppHandle<Wry>,
 }
 
-impl<R: Runtime> EventPublisher for TauriEvents<R> {
+impl EventPublisher for TauriEvents {
     fn publish(&self, event: AppEvent) {
         let name = match event {
             AppEvent::HistoryChanged => "history://changed",
+            AppEvent::CaptureStateChanged => {
+                tray::refresh(&self.app);
+                "capture://changed"
+            }
         };
         if let Err(error) = self.app.emit(name, ()) {
             tracing::warn!(%error, name, "failed to emit event");
@@ -73,12 +82,15 @@ pub struct Container {
     pub clock: Arc<SystemClock>,
     pub events: Arc<dyn EventPublisher>,
     pub own_writes: Arc<OwnWriteRegistry>,
+    pub clipboard: Arc<Win32Clipboard>,
+    pub focus: Arc<Win32FocusTracker>,
+    pub keys: Arc<Win32KeystrokeSender>,
     capture: Mutex<Option<CaptureService>>,
 }
 
 impl Container {
     /// Opens storage under `data_dir` (`history.db` and `images/`, specs/03 §7).
-    pub fn build<R: Runtime>(data_dir: &Path, app: AppHandle<R>) -> Result<Self, StartupError> {
+    pub fn build(data_dir: &Path, app: AppHandle<Wry>) -> Result<Self, StartupError> {
         let opened = Database::open(&data_dir.join("history.db"))?;
         // REL-005: the user notification is shown by the UI from M4 on.
         if let Some(backup) = &opened.recovered_from {
@@ -91,8 +103,25 @@ impl Container {
             clock: Arc::new(SystemClock),
             events: Arc::new(TauriEvents { app }),
             own_writes: Arc::new(OwnWriteRegistry::default()),
+            clipboard: Arc::new(Win32Clipboard::new()),
+            focus: Arc::new(Win32FocusTracker),
+            keys: Arc::new(Win32KeystrokeSender),
             capture: Mutex::new(None),
         })
+    }
+
+    /// Ports for pasting and copying items (PST-*, HIST-011).
+    pub fn paste_dependencies(&self) -> PasteDependencies {
+        PasteDependencies {
+            history: self.history.clone(),
+            images: self.images.clone(),
+            writer: self.clipboard.clone(),
+            focus: self.focus.clone(),
+            keys: self.keys.clone(),
+            own_writes: self.own_writes.clone(),
+            clock: self.clock.clone(),
+            events: self.events.clone(),
+        }
     }
 
     /// Starts listening to the clipboard and recording changes (CAP-001..012).
@@ -106,7 +135,7 @@ impl Container {
             own_writes: self.own_writes.clone(),
         });
         let worker = CaptureWorker::new(
-            Arc::new(Win32Clipboard::new()),
+            self.clipboard.clone(),
             capture,
             self.clock.clone(),
             Debouncer::DEFAULT_QUIET_PERIOD,

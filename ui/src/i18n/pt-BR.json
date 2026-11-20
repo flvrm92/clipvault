@@ -1,12 +1,77 @@
 {
   "app": {
-    "name": "ClipVault",
-    "tagline": "Seu histórico da área de transferência, seguro e a um atalho de distância.",
-    "foundation": "Versão de fundação. A captura da área de transferência chega nos próximos marcos."
+    "name": "ClipVault"
   },
   "tray": {
     "tooltip": "ClipVault",
-    "open": "Abrir o ClipVault",
+    "tooltipPaused": "ClipVault — captura pausada",
+    "open": "Abrir histórico",
+    "pause": "Pausar captura",
+    "resume": "Retomar captura",
     "quit": "Sair"
+  },
+  "notification": {
+    "copiedOnly": "Conteúdo copiado. Cole com Ctrl+V."
+  },
+  "popup": {
+    "title": "Histórico da área de transferência",
+    "search": {
+      "placeholder": "Buscar no histórico…",
+      "label": "Buscar no histórico"
+    },
+    "filter": {
+      "all": "Tudo",
+      "text": "Texto",
+      "images": "Imagens",
+      "pinned": "Fixados",
+      "label": "Filtro"
+    },
+    "list": {
+      "label": "Histórico da área de transferência"
+    },
+    "empty": {
+      "title": "Nada por aqui ainda",
+      "body": "Copie algo para começar",
+      "shortcut": "Abra com {shortcut}"
+    },
+    "noResults": "Nenhum resultado para \"{query}\"",
+    "noItemsInFilter": "Nenhum item neste filtro",
+    "paused": {
+      "message": "Captura pausada",
+      "resume": "Retomar"
+    },
+    "item": {
+      "image": "Imagem {width} × {height}",
+      "pin": "Fixar",
+      "unpin": "Desafixar",
+      "delete": "Excluir",
+      "pinned": "Fixado"
+    },
+    "menu": {
+      "label": "Mais opções",
+      "pause": "Pausar captura",
+      "resume": "Retomar captura",
+      "clear": "Limpar histórico"
+    },
+    "clear": {
+      "confirm": "Remover todos os itens não fixados?",
+      "keepPinned": "Itens fixados serão mantidos.",
+      "confirmAction": "Limpar",
+      "cancel": "Cancelar"
+    },
+    "toast": {
+      "deleted": "Item excluído",
+      "undo": "Desfazer",
+      "error": "Algo deu errado. Tente novamente."
+    },
+    "hints": {
+      "paste": "Colar",
+      "plain": "Texto puro",
+      "pin": "Fixar",
+      "delete": "Excluir"
+    },
+    "preview": {
+      "close": "Fechar pré-visualização"
+    }
   }
 }

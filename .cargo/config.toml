@@ -1,2 +1,6 @@
 [alias]
 xtask = "run --quiet --package xtask --"
+
+[env]
+# TypeScript bindings generated from the app DTOs by ts-rs (specs/04 §P-09).
+TS_RS_EXPORT_DIR = { value = "ui/src/api/bindings", relative = true }

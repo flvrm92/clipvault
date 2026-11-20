@@ -7,9 +7,10 @@ use std::sync::Mutex;
 use std::time::Duration;
 
 use clipvault_application::ports::{
-    AppEvent, ClearScope, ClipboardReader, ClipboardSnapshot, Clock, EventPublisher, HistoryQuery,
-    HistoryRepository, ImageStore, KindFilter, Page, PortError, Removal, SettingsRepository,
-    StoredImage,
+    AppEvent, ClearScope, ClipboardContent, ClipboardReader, ClipboardSequence, ClipboardSnapshot,
+    ClipboardWriter, Clock, EventPublisher, FocusTracker, HistoryQuery, HistoryRepository,
+    ImageStore, KeystrokeSender, KindFilter, Page, PortError, Removal, SettingsRepository,
+    StoredImage, TargetWindow, WindowHandle,
 };
 use clipvault_domain::clip::{ClipContent, ClipItem, NewClipItem, PinState};
 use clipvault_domain::hash::ContentHash;
@@ -267,7 +268,8 @@ impl HistoryRepository for InMemoryHistoryRepository {
 
 #[derive(Debug, Default)]
 struct ImageState {
-    files: BTreeMap<FileKey, u64>,
+    /// Reported file size and the original pixels.
+    files: BTreeMap<FileKey, (u64, ImagePixels)>,
     fail_next_save: bool,
     fail_next_remove: bool,
 }
@@ -286,7 +288,7 @@ impl InMemoryImageStore {
 
     /// The reported file size of the image under `key`.
     pub fn stored_size(&self, key: &FileKey) -> Option<u64> {
-        lock(&self.state).files.get(key).copied()
+        lock(&self.state).files.get(key).map(|(size, _)| *size)
     }
 
     /// Number of stored images.
@@ -318,7 +320,7 @@ impl ImageStore for InMemoryImageStore {
         }
         // Pretend PNG compresses to half the raw size.
         let file_size = (pixels.byte_len() as u64).div_ceil(2);
-        state.files.insert(key.clone(), file_size);
+        state.files.insert(key.clone(), (file_size, pixels.clone()));
         let (thumb_width, thumb_height) = thumbnail_size(pixels.width(), pixels.height());
         Ok(StoredImage {
             file_size,
@@ -334,6 +336,14 @@ impl ImageStore for InMemoryImageStore {
         }
         state.files.remove(key);
         Ok(())
+    }
+
+    fn load(&self, key: &FileKey) -> Result<ImagePixels, PortError> {
+        lock(&self.state)
+            .files
+            .get(key)
+            .map(|(_, pixels)| pixels.clone())
+            .ok_or(PortError::NotFound)
     }
 
     fn keys(&self) -> Result<Vec<FileKey>, PortError> {
@@ -453,5 +463,126 @@ impl ClipboardReader for FakeClipboardReader {
             .current
             .clone()
             .ok_or_else(|| PortError::Unavailable("empty fake clipboard".into()))
+    }
+}
+
+#[derive(Debug, Default)]
+struct WriterState {
+    writes: Vec<ClipboardContent>,
+    next_sequence: u32,
+    fail_next: bool,
+}
+
+/// Records what is written to the clipboard.
+#[derive(Debug, Default)]
+pub struct RecordingClipboardWriter {
+    state: Mutex<WriterState>,
+}
+
+impl RecordingClipboardWriter {
+    /// Contents written so far.
+    pub fn writes(&self) -> Vec<ClipboardContent> {
+        lock(&self.state).writes.clone()
+    }
+
+    /// Sequence number returned by the next write.
+    pub fn next_sequence(&self, raw: u32) {
+        lock(&self.state).next_sequence = raw;
+    }
+
+    /// Makes the next write fail as if the clipboard stayed locked.
+    pub fn fail_next(&self) {
+        lock(&self.state).fail_next = true;
+    }
+}
+
+impl ClipboardWriter for RecordingClipboardWriter {
+    fn write(&self, content: &ClipboardContent) -> Result<ClipboardSequence, PortError> {
+        let mut state = lock(&self.state);
+        if std::mem::take(&mut state.fail_next) {
+            return Err(PortError::Unavailable("clipboard locked".into()));
+        }
+        state.writes.push(content.clone());
+        Ok(ClipboardSequence::new(state.next_sequence))
+    }
+}
+
+#[derive(Debug, Default)]
+struct FocusState {
+    target: Option<TargetWindow>,
+    restored: Vec<WindowHandle>,
+    fail_restore: bool,
+}
+
+/// A foreground window controlled by the test.
+#[derive(Debug, Default)]
+pub struct FakeFocusTracker {
+    state: Mutex<FocusState>,
+}
+
+impl FakeFocusTracker {
+    /// Sets what [`FocusTracker::capture_target`] returns.
+    pub fn set_target(&self, target: Option<TargetWindow>) {
+        lock(&self.state).target = target;
+    }
+
+    /// Makes every restore fail (window closed).
+    pub fn fail_restore(&self) {
+        lock(&self.state).fail_restore = true;
+    }
+
+    /// Windows restored so far.
+    pub fn restored(&self) -> Vec<WindowHandle> {
+        lock(&self.state).restored.clone()
+    }
+}
+
+impl FocusTracker for FakeFocusTracker {
+    fn capture_target(&self) -> Option<TargetWindow> {
+        lock(&self.state).target
+    }
+
+    fn restore(&self, target: &TargetWindow) -> Result<(), PortError> {
+        let mut state = lock(&self.state);
+        if state.fail_restore {
+            return Err(PortError::Unavailable("window closed".into()));
+        }
+        state.restored.push(target.handle);
+        Ok(())
+    }
+}
+
+#[derive(Debug, Default)]
+struct KeystrokeState {
+    pastes: usize,
+    fail_next: bool,
+}
+
+/// Counts synthetic `Ctrl+V` keystrokes.
+#[derive(Debug, Default)]
+pub struct RecordingKeystrokes {
+    state: Mutex<KeystrokeState>,
+}
+
+impl RecordingKeystrokes {
+    /// Number of pastes sent.
+    pub fn pastes(&self) -> usize {
+        lock(&self.state).pastes
+    }
+
+    /// Makes the next paste fail.
+    pub fn fail_next(&self) {
+        lock(&self.state).fail_next = true;
+    }
+}
+
+impl KeystrokeSender for RecordingKeystrokes {
+    fn send_paste(&self) -> Result<(), PortError> {
+        let mut state = lock(&self.state);
+        if std::mem::take(&mut state.fail_next) {
+            return Err(PortError::Unavailable("input blocked".into()));
+        }
+        state.pastes += 1;
+        Ok(())
     }
 }

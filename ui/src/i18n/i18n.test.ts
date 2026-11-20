@@ -31,6 +31,12 @@ describe('translate', () => {
     expect(translate(catalog, 'pt-BR', 'missing.key')).toBe('missing.key');
   });
 
+  it('[I18N-003] replaces {placeholders} with parameters', () => {
+    const withParams = { en: { found: 'No results for "{query}"' } };
+    expect(translate(withParams, 'en', 'found', { query: 'café' })).toBe('No results for "café"');
+    expect(translate(withParams, 'en', 'found')).toBe('No results for "{query}"');
+  });
+
   it('does not return non-string nodes', () => {
     expect(translate(catalog, 'en', 'greeting')).toBe('greeting');
   });

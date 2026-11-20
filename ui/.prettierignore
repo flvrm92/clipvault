@@ -1,3 +1,4 @@
 dist
 coverage
+src/api/bindings
 node_modules

@@ -20,4 +20,11 @@ enforced = [
   "PRIV-003", "PRIV-004",
   "REL-003",
   "TRAY-005",
+  # M4 — Popup e colagem
+  "HIST-008", "HIST-009", "HIST-010", "HIST-011",
+  "PST-001", "PST-002", "PST-003", "PST-004", "PST-005", "PST-006", "PST-007",
+  "HK-005",
+  "THM-001", "THM-002", "THM-003",
+  "TRAY-002", "TRAY-003",
+  "A11Y-001", "I18N-003", "SEC-003",
 ]

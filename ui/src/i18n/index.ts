@@ -25,9 +25,18 @@ function lookup(tree: MessageTree | undefined, key: string): string | undefined 
   return typeof node === 'string' ? node : undefined;
 }
 
+export type Params = Record<string, string | number>;
+
+function interpolate(text: string, params?: Params): string {
+  if (!params) return text;
+  return text.replace(/\{(\w+)\}/g, (match, name: string) =>
+    name in params ? String(params[name]) : match,
+  );
+}
+
 /** Translates a dotted key, falling back to English and then to the key itself. */
-export function translate(catalog: Catalog, locale: Locale, key: string): string {
-  return lookup(catalog[locale], key) ?? lookup(catalog.en, key) ?? key;
+export function translate(catalog: Catalog, locale: Locale, key: string, params?: Params): string {
+  return interpolate(lookup(catalog[locale], key) ?? lookup(catalog.en, key) ?? key, params);
 }
 
 /** Lists every leaf key of a message tree using dotted notation. */
@@ -38,9 +47,10 @@ export function flattenKeys(tree: MessageTree, prefix = ''): string[] {
   });
 }
 
-const currentLocale = resolveLocale(globalThis.navigator?.language);
+/** Locale of the interface (I18N-001). */
+export const currentLocale = resolveLocale(globalThis.navigator?.language);
 
 /** Translates `key` in the current UI locale. */
-export function t(key: string): string {
-  return translate(messages, currentLocale, key);
+export function t(key: string, params?: Params): string {
+  return translate(messages, currentLocale, key, params);
 }
