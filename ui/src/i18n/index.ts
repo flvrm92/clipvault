@@ -1,4 +1,5 @@
 import en from './en.json';
+import { localeState } from './locale.svelte';
 import ptBR from './pt-BR.json';
 
 export type Locale = 'en' | 'pt-BR';
@@ -47,10 +48,29 @@ export function flattenKeys(tree: MessageTree, prefix = ''): string[] {
   });
 }
 
-/** Locale of the interface (I18N-001). */
-export const currentLocale = resolveLocale(globalThis.navigator?.language);
+/** Locale of the interface (I18N-001). Reading it inside a component makes it reactive. */
+export function getLocale(): Locale {
+  return resolveLocale(localeState.tag);
+}
+
+/** Applies the locale resolved by the backend (I18N-002); text re-renders without reloading. */
+export function setLocale(tag: string): void {
+  localeState.tag = tag;
+  if (globalThis.document) document.documentElement.lang = getLocale();
+}
 
 /** Translates `key` in the current UI locale. */
 export function t(key: string, params?: Params): string {
-  return translate(messages, currentLocale, key, params);
+  return translate(messages, getLocale(), key, params);
+}
+
+/** Translates a count-dependent message: `key.one`, `key.other`… chosen by `Intl.PluralRules`,
+ * with `{count}` formatted for the locale (I18N-003). */
+export function tn(key: string, count: number, params?: Params): string {
+  const locale = getLocale();
+  const form = new Intl.PluralRules(locale).select(count);
+  const formatted = new Intl.NumberFormat(locale).format(count);
+  const all = { ...params, count: formatted };
+  const exact = translate(messages, locale, `${key}.${form}`, all);
+  return exact === `${key}.${form}` ? translate(messages, locale, `${key}.other`, all) : exact;
 }

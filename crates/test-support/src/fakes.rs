@@ -10,8 +10,10 @@ use clipvault_application::ports::{
     AppEvent, ClearScope, ClipboardContent, ClipboardReader, ClipboardSequence, ClipboardSnapshot,
     ClipboardWriter, Clock, Delay, EventPublisher, FocusTracker, HistoryQuery, HistoryRepository,
     HotkeyRegistrar, ImageStore, KeystrokeSender, KindFilter, Page, PortError, Removal,
-    SettingsRepository, SnippetRepository, StoredImage, Suspension, TargetWindow, WindowHandle,
+    RunningApps, SettingsRepository, SnippetRepository, StoredImage, Suspension, TargetWindow,
+    WindowHandle,
 };
+use clipvault_domain::app_name::AppName;
 use clipvault_domain::clip::{ClipContent, ClipItem, NewClipItem, PinState};
 use clipvault_domain::hash::ContentHash;
 use clipvault_domain::hotkey::{Hotkey, HotkeyOwner};
@@ -792,5 +794,24 @@ impl RecordingDelay {
 impl Delay for RecordingDelay {
     fn wait(&self, duration: Duration) {
         lock(&self.waits).push(duration);
+    }
+}
+
+/// A fixed list of running applications (CAP-009).
+#[derive(Debug, Default)]
+pub struct FakeRunningApps {
+    apps: Vec<AppName>,
+}
+
+impl FakeRunningApps {
+    /// Reports `apps`, in this order.
+    pub const fn new(apps: Vec<AppName>) -> Self {
+        Self { apps }
+    }
+}
+
+impl RunningApps for FakeRunningApps {
+    fn list(&self) -> Result<Vec<AppName>, PortError> {
+        Ok(self.apps.clone())
     }
 }

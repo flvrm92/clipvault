@@ -97,8 +97,9 @@ fn is_shell(hwnd: HWND) -> bool {
     SHELL_CLASSES.contains(&class_name(hwnd).as_str())
 }
 
-/// A visible, titled, non-tool, non-cloaked top-level window of another process.
-fn is_app_window(hwnd: HWND, own_pid: u32) -> bool {
+/// A visible, titled, non-tool, non-cloaked top-level window of another process; minimized
+/// windows included. Also used to list the applications that can be excluded (CAP-009).
+pub(super) fn is_user_window(hwnd: HWND, own_pid: u32) -> bool {
     let mut cloaked = 0_u32;
     // SAFETY: plain queries on a window handle obtained from the z-order walk; the cloaked
     // attribute is a DWORD written into `cloaked`.
@@ -111,7 +112,6 @@ fn is_app_window(hwnd: HWND, own_pid: u32) -> bool {
             u32::try_from(size_of::<u32>()).unwrap_or(4),
         );
         IsWindowVisible(hwnd).as_bool()
-            && !IsIconic(hwnd).as_bool()
             && GetWindowTextLengthW(hwnd) > 0
             && ex_style & WS_EX_TOOLWINDOW.0 as usize == 0
             && cloaked == 0
@@ -120,20 +120,28 @@ fn is_app_window(hwnd: HWND, own_pid: u32) -> bool {
     }
 }
 
+/// A user window that is not minimized: a possible paste target.
+fn is_app_window(hwnd: HWND, own_pid: u32) -> bool {
+    // SAFETY: plain query on a window handle.
+    is_user_window(hwnd, own_pid) && !unsafe { IsIconic(hwnd) }.as_bool()
+}
+
+/// Top-level windows in z-order, top first (bounded walk).
+pub(super) fn top_level_windows() -> impl Iterator<Item = HWND> {
+    // SAFETY: walks the top-level z-order; each handle is only queried.
+    let first = unsafe { GetTopWindow(None) }.ok();
+    std::iter::successors(first, |hwnd| {
+        // SAFETY: as above.
+        unsafe { GetWindow(*hwnd, GW_HWNDNEXT) }.ok()
+    })
+    .take_while(|h| !h.is_invalid())
+    .take(1_000)
+}
+
 /// The top-most application window, used when the shell (e.g. the tray icon that opened the
 /// popup) owns the foreground: that is the window the user was working in.
 fn topmost_app_window(own_pid: u32) -> Option<HWND> {
-    // SAFETY: walks the top-level z-order; each handle is only queried.
-    let mut current = unsafe { GetTopWindow(None) }.ok();
-    for _ in 0..1_000 {
-        let hwnd = current.filter(|h| !h.is_invalid())?;
-        if is_app_window(hwnd, own_pid) {
-            return Some(hwnd);
-        }
-        // SAFETY: as above.
-        current = unsafe { GetWindow(hwnd, GW_HWNDNEXT) }.ok();
-    }
-    None
+    top_level_windows().find(|hwnd| is_app_window(*hwnd, own_pid))
 }
 
 /// Tracks the window that receives pastes.

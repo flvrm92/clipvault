@@ -4,6 +4,8 @@
  */
 import { invoke } from '@tauri-apps/api/core';
 import { listen, type UnlistenFn } from '@tauri-apps/api/event';
+import type { AboutDto } from './bindings/AboutDto';
+import type { AboutLinkDto } from './bindings/AboutLinkDto';
 import type { CaptureStateDto } from './bindings/CaptureStateDto';
 import type { ClearScopeDto } from './bindings/ClearScopeDto';
 import type { HistoryPageDto } from './bindings/HistoryPageDto';
@@ -15,6 +17,12 @@ import type { ShortcutSettingsDto } from './bindings/ShortcutSettingsDto';
 import type { SnippetDraftDto } from './bindings/SnippetDraftDto';
 import type { SnippetDto } from './bindings/SnippetDto';
 import type { SuspensionDto } from './bindings/SuspensionDto';
+import type { LanguageDto } from './bindings/LanguageDto';
+import type { RetentionDto } from './bindings/RetentionDto';
+import type { SettingsDto } from './bindings/SettingsDto';
+import type { SettingsSectionDto } from './bindings/SettingsSectionDto';
+import type { SizeLimitDto } from './bindings/SizeLimitDto';
+import type { ThemeModeDto } from './bindings/ThemeModeDto';
 import type { ToggleDto } from './bindings/ToggleDto';
 
 export type AppEventName =
@@ -23,7 +31,8 @@ export type AppEventName =
   | 'appearance://changed'
   | 'popup://shown'
   | 'popup://hidden'
-  | 'settings://changed';
+  | 'settings://changed'
+  | 'settings://navigate';
 
 export interface ClipVaultApi {
   listHistory(query: HistoryQueryDto): Promise<HistoryPageDto>;
@@ -45,6 +54,21 @@ export interface ClipVaultApi {
   setHotkeySuspension(suspension: SuspensionDto): Promise<void>;
   setRestoreClipboard(value: ToggleDto): Promise<void>;
   openSettings(): Promise<void>;
+  getSettings(): Promise<SettingsDto>;
+  setLanguage(language: LanguageDto): Promise<void>;
+  setTheme(theme: ThemeModeDto): Promise<void>;
+  setUseAccentColor(value: ToggleDto): Promise<void>;
+  previewRetention(retention: RetentionDto): Promise<number>;
+  setRetention(retention: RetentionDto): Promise<number>;
+  setClearOnExit(value: ToggleDto): Promise<void>;
+  setSizeLimit(limit: SizeLimitDto, bytes: number): Promise<void>;
+  addExcludedApp(name: string): Promise<string>;
+  removeExcludedApp(name: string): Promise<void>;
+  listRunningApps(): Promise<string[]>;
+  restoreDefaults(section: SettingsSectionDto): Promise<number>;
+  getAbout(): Promise<AboutDto>;
+  openAboutLink(link: AboutLinkDto): Promise<void>;
+  openDataFolder(): Promise<void>;
   on(event: AppEventName, handler: (payload: unknown) => void): Promise<UnlistenFn>;
 }
 
@@ -68,6 +92,21 @@ export const tauriApi: ClipVaultApi = {
   setHotkeySuspension: (suspension) => invoke('set_hotkey_suspension', { suspension }),
   setRestoreClipboard: (value) => invoke('set_restore_clipboard', { value }),
   openSettings: () => invoke('open_settings'),
+  getSettings: () => invoke('get_settings'),
+  setLanguage: (language) => invoke('set_language', { language }),
+  setTheme: (theme) => invoke('set_theme', { theme }),
+  setUseAccentColor: (value) => invoke('set_use_accent_color', { value }),
+  previewRetention: (retention) => invoke('preview_retention', { retention }),
+  setRetention: (retention) => invoke('set_retention', { retention }),
+  setClearOnExit: (value) => invoke('set_clear_on_exit', { value }),
+  setSizeLimit: (limit, bytes) => invoke('set_size_limit', { limit, bytes }),
+  addExcludedApp: (name) => invoke('add_excluded_app', { name }),
+  removeExcludedApp: (name) => invoke('remove_excluded_app', { name }),
+  listRunningApps: () => invoke('list_running_apps'),
+  restoreDefaults: (section) => invoke('restore_defaults', { section }),
+  getAbout: () => invoke('get_about'),
+  openAboutLink: (link) => invoke('open_about_link', { link }),
+  openDataFolder: () => invoke('open_data_folder'),
   on: (event, handler) => listen(event, (e) => handler(e.payload)),
 };
 

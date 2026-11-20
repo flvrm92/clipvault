@@ -37,6 +37,7 @@ Cenário: App iniciado
 ### TRAY-002 · Interações com o ícone — M
 - Clique esquerdo: abre/fecha o popup de histórico.
 - Clique direito: menu de contexto com: **Abrir histórico**, **Pausar captura / Retomar captura**, **Configurações**, **Sobre**, **Sair**.
+- "Configurações" abre a janela de configurações na seção Geral; "Sobre" abre a mesma janela na seção Sobre (CFG-005). Se a janela já estiver aberta, ela é trazida à frente e passa para a seção pedida.
 
 ```gherkin
 Cenário: Menu de contexto
@@ -108,6 +109,7 @@ Texto vazio ou composto apenas por espaços em branco não é registrado.
 ### CAP-006 · Limites de tamanho — M
 - Texto acima do limite configurado (padrão **1 MB**, UTF-8) não é registrado; o evento é logado.
 - Imagem acima do limite configurado (padrão **64 MiB** em bitmap RGBA descomprimido, o que comporta prints de monitores 4K e 5K) não é registrada.
+- Opções oferecidas em Configurações → Histórico: texto **256 KB · 1 MB (padrão) · 5 MB · 10 MB**; imagem **16 MiB · 64 MiB (padrão) · 128 MiB · 256 MiB**. O backend rejeita valores fora dessas listas (SEC-004).
 
 ### CAP-007 · Respeitar sinalizadores de privacidade — M
 Não registrar o conteúdo quando o clipboard contiver qualquer um dos formatos:
@@ -127,6 +129,7 @@ Com a captura pausada (via bandeja ou configurações), alterações do clipboar
 
 ### CAP-009 · Aplicativos excluídos — S
 O usuário pode cadastrar executáveis (ex.: `keepass.exe`) cujas cópias são ignoradas. A identificação usa o processo dono do clipboard (`GetClipboardOwner` → PID → nome do executável); se não for possível identificar o dono, o conteúdo é capturado normalmente.
+- Em Configurações → Privacidade, o usuário adiciona um app digitando o nome do executável ou escolhendo entre os apps com janela visível no momento (lista ordenada, sem duplicatas, sem o próprio ClipVault e sem os já excluídos). Nomes são normalizados (minúsculas, só o nome do arquivo); adicionar um nome já presente não duplica.
 
 ### CAP-010 · Captura própria — M
 Quando o próprio ClipVault escreve no clipboard (para colar um item do histórico ou um snippet), essa alteração **não** cria um item novo:
@@ -325,7 +328,7 @@ A limpeza ocorre: na inicialização, a cada captura (somente regra de quantidad
 Na inicialização, arquivos de imagem sem registro no banco são removidos e registros sem arquivo são excluídos (reconciliação).
 
 ### RET-006 · Limpar ao sair — C
-Opção "Limpar histórico ao sair" (exceto fixados) — padrão desligado.
+Opção "Limpar histórico ao sair" (exceto fixados) — padrão desligado. Ligada, "Sair" (TRAY-005) remove os itens não fixados e seus arquivos de imagem antes de encerrar.
 
 ---
 
@@ -341,10 +344,20 @@ Alterações são salvas e aplicadas imediatamente (sem botão "Salvar"), exceto
 Opção "Iniciar com o Windows" — implementada via `StartupTask` do MSIX (ver [09](09-distribuicao-msix.md)). Padrão: ligado após confirmação na primeira execução. Se o usuário desabilitou nas Configurações do Windows, a opção fica desabilitada com explicação.
 
 ### CFG-004 · Restaurar padrões — S
-Botão "Restaurar padrões" por seção (não afeta histórico nem snippets).
+Botão "Restaurar padrões" por seção (não afeta histórico nem snippets). Cada botão volta ao padrão de [05 §3](05-modelo-de-dados.md) só as configurações da própria seção:
+
+| Seção | Configurações restauradas |
+|-------|---------------------------|
+| Geral | idioma, captura ativa (despausa). "Iniciar com o Windows" não muda: depende do consentimento do usuário (CFG-003). |
+| Histórico | período de retenção, quantidade máxima, limpar ao sair, limites de tamanho de texto e imagem. A retenção restaurada segue RET-004 (confirmação se remover itens). |
+| Atalhos | atalho de abertura e "restaurar área de transferência". Se o atalho padrão estiver em uso por um snippet ou outro app, nada muda e o conflito é exibido (HK-003/HK-004). |
+| Privacidade | lista de apps excluídos (fica vazia). |
+| Aparência | tema e "usar cor de destaque do Windows". |
 
 ### CFG-005 · Sobre — M
 Versão, link para política de privacidade, licenças de terceiros, link de suporte, e "Abrir pasta de dados" (somente leitura, para diagnóstico).
+- Os endereços ficam fixos no backend; a UI pede um link pelo nome (`privacy`, `licenses`, `support`) e nunca envia URL nem caminho (SEC-003/SEC-004).
+- Política de privacidade e licenças de terceiros apontam para os documentos do repositório público; o conteúdo deles é produzido no M7 ([09](09-distribuicao-msix.md)). Suporte aponta para as *issues* do repositório.
 
 ### CFG-006 · Configurações válidas — M
 Valores inválidos/corrompidos lidos do armazenamento são substituídos pelo padrão e logados; o app nunca deixa de iniciar por configuração inválida.
@@ -363,7 +376,10 @@ No Windows 11, popup e configurações usam material **Mica** (configurações) 
 O ícone da bandeja usa a variante clara ou escura conforme o tema da barra de tarefas (`SystemUsesLightTheme`), e atualiza ao mudar.
 
 ### THM-004 · Cor de destaque — C
-Opção de usar a cor de destaque do Windows no lugar da cor da marca.
+Opção de usar a cor de destaque do Windows no lugar da cor da marca (padrão desligado).
+- A cor vem da paleta de destaque do Windows (`AccentPalette`): o tom escuro 1 no tema claro e o tom claro 2 no tema escuro, como o próprio Windows faz.
+- O texto sobre o destaque fica branco ou quase preto, o que der maior contraste. Se o destaque não atingir 3:1 contra a superfície do tema (A11Y-002), a cor da marca é usada.
+- A cor é relida ao abrir o popup, ao abrir as configurações e ao mudar o tema; sem a paleta (Windows sem a chave), vale a cor da marca.
 
 ---
 
@@ -373,7 +389,7 @@ Opção de usar a cor de destaque do Windows no lugar da cor da marca.
 PT-BR e EN (fallback EN). Idioma padrão: idioma de exibição do Windows se suportado; senão EN.
 
 ### I18N-002 · Troca de idioma — S
-Configurações → Geral → Idioma: **Sistema · Português (Brasil) · English**. Aplica sem reiniciar.
+Configurações → Geral → Idioma: **Sistema · Português (Brasil) · English**. Aplica sem reiniciar, em todas as superfícies: popup, janela de configurações (incluindo o título), menu e tooltip da bandeja e notificações seguintes. O idioma efetivo é resolvido no backend e enviado à UI, que não o deduz sozinha.
 
 ### I18N-003 · Formatos locais — M
 Datas, tempos relativos e números seguem o idioma ativo.

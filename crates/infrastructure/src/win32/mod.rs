@@ -5,6 +5,8 @@
 //! call is sound.
 #![allow(unsafe_code)] // FFI boundary; see module docs.
 
+mod accent;
+mod apps;
 mod clipboard;
 mod focus;
 mod hotkeys;
@@ -15,6 +17,8 @@ mod process;
 mod theme;
 mod window;
 
+pub use accent::{AccentColors, Rgb, system_accent};
+pub use apps::Win32RunningApps;
 pub use clipboard::Win32Clipboard;
 pub use focus::Win32FocusTracker;
 pub use hotkeys::Win32HotkeyRegistrar;

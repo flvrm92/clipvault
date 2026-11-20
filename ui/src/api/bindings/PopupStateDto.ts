@@ -8,4 +8,8 @@ export type PopupStateDto = {
 /**
  * Shortcut that opens the popup, in canonical form (HIST-010).
  */
-openShortcut: string, capturePaused: boolean, appearance: AppearanceDto, };
+openShortcut: string, capturePaused: boolean, appearance: AppearanceDto, 
+/**
+ * Effective interface language, resolved by the backend (I18N-002).
+ */
+locale: string, };

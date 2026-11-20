@@ -26,6 +26,12 @@
   --focus-ring: #4b3fd1;
   --warning-surface: #fff4ce;
   --popup-background: var(--surface);
+
+  /* Fixed swatches of the theme cards (settings → Aparência): never follow the active theme. */
+  --swatch-light: #f7f7fa;
+  --swatch-light-raised: #ffffff;
+  --swatch-dark: #1c1b22;
+  --swatch-dark-raised: #26252e;
 }
 
 @media (prefers-color-scheme: dark) {

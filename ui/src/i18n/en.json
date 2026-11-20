@@ -9,7 +9,8 @@
     "pause": "Pause capture",
     "resume": "Resume capture",
     "quit": "Quit",
-    "settings": "Settings"
+    "settings": "Settings",
+    "about": "About"
   },
   "notification": {
     "copiedOnly": "Copied. Paste with Ctrl+V.",
@@ -86,7 +87,12 @@
     "title": "Settings",
     "nav": {
       "label": "Sections",
-      "shortcuts": "Shortcuts"
+      "shortcuts": "Shortcuts",
+      "general": "General",
+      "history": "History",
+      "privacy": "Privacy",
+      "appearance": "Appearance",
+      "about": "About"
     },
     "shortcuts": {
       "heading": "Shortcuts",
@@ -119,6 +125,91 @@
       "change": "Change",
       "clear": "Remove shortcut",
       "hint": "Esc cancels · Backspace removes"
+    },
+    "common": {
+      "cancel": "Cancel",
+      "continue": "Continue"
+    },
+    "restore": {
+      "button": "Restore defaults"
+    },
+    "general": {
+      "heading": "General",
+      "language": "Language",
+      "languageHint": "Applied right away, no restart needed.",
+      "languages": {
+        "system": "Windows language",
+        "ptBr": "Português (Brasil)",
+        "en": "English"
+      },
+      "capture": "Capture",
+      "captureHint": "When off, what you copy is not added to the history.",
+      "captureToggle": "Capture on"
+    },
+    "history": {
+      "heading": "History",
+      "retention": "Keep items for",
+      "retentionHint": "Pinned items never expire.",
+      "maxItems": "Maximum number of items",
+      "maxItemsHint": "Beyond this, the oldest unpinned items are removed.",
+      "days": {
+        "one": "{count} day",
+        "other": "{count} days"
+      },
+      "forever": "Forever",
+      "unlimited": "Unlimited",
+      "confirmPurge": {
+        "one": "This will remove {count} item. Continue?",
+        "other": "This will remove {count} items. Continue?"
+      },
+      "removed": {
+        "one": "{count} item removed.",
+        "other": "{count} items removed."
+      },
+      "clearOnExit": "Clear the history on exit (pinned items are kept)",
+      "maxText": "Maximum text size",
+      "maxImage": "Maximum image size",
+      "sizeHint": "Larger content is not recorded.",
+      "clear": "Clear history",
+      "clearHint": "Removes every unpinned item.",
+      "clearConfirm": "Remove every unpinned item? Pinned items will be kept."
+    },
+    "privacy": {
+      "heading": "Privacy",
+      "respectedTitle": "Always respected",
+      "respected": "ClipVault ignores what password managers and Windows itself mark as private.",
+      "excluded": "Excluded apps",
+      "excludedHint": "Anything copied in these apps is not added to the history.",
+      "none": "No excluded apps.",
+      "remove": "Remove",
+      "name": "Executable name",
+      "namePlaceholder": "e.g. keepass.exe",
+      "add": "Add",
+      "running": "Open apps",
+      "runningPlaceholder": "Choose an app…",
+      "noRunning": "No other app is open."
+    },
+    "appearance": {
+      "heading": "Appearance",
+      "theme": "Theme",
+      "themes": {
+        "system": "System",
+        "light": "Light",
+        "dark": "Dark"
+      },
+      "accent": "Accent color",
+      "accentHint": "Uses the Windows accent color when it has enough contrast.",
+      "accentToggle": "Use the Windows color"
+    },
+    "about": {
+      "heading": "About",
+      "version": "Version {version}",
+      "privacy": "Privacy policy",
+      "licenses": "Third-party licenses",
+      "support": "Support",
+      "dataFolder": "Data folder",
+      "dataFolderHint": "For troubleshooting. Do not change the files.",
+      "openDataFolder": "Open folder"
     }
   },
   "errors": {
@@ -144,6 +235,8 @@
       "nameTooLong": "Use at most 60 characters.",
       "bodyBlank": "Enter the content.",
       "bodyTooLarge": "The content is too long (max. 100 KB)."
-    }
+    },
+    "invalidSetting": "This value is not supported.",
+    "invalidAppName": "Enter an executable name."
   }
 }

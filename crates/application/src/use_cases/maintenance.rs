@@ -30,6 +30,7 @@ pub(crate) fn apply_retention(
 }
 
 /// Ports required by [`PurgeExpired`].
+#[derive(Clone)]
 pub struct RetentionDependencies {
     /// History persistence.
     pub history: Arc<dyn HistoryRepository>,

@@ -3,6 +3,7 @@
 //! Pattern: Ports & Adapters — specs/04 §P-01; Repository — §P-02.
 //! Ports are added as use cases need them.
 
+mod apps;
 mod clipboard;
 mod clock;
 mod events;
@@ -12,6 +13,7 @@ mod hotkeys;
 mod images;
 mod settings;
 
+pub use apps::RunningApps;
 pub use clipboard::{
     ClipboardContent, ClipboardReader, ClipboardSequence, ClipboardSnapshot, ClipboardWriter,
     PrivacyFlags,

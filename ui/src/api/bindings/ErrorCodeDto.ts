@@ -3,4 +3,4 @@
 /**
  * Error category; the UI maps it to a translated message (specs/03 §6).
  */
-export type ErrorCodeDto = "notFound" | "unavailable" | "storage" | "inUse" | "nameTaken" | "hotkeyTakenByOpen" | "hotkeyTakenBySnippet" | "invalidSnippet" | "invalidHotkey";
+export type ErrorCodeDto = "notFound" | "unavailable" | "storage" | "inUse" | "nameTaken" | "hotkeyTakenByOpen" | "hotkeyTakenBySnippet" | "invalidSnippet" | "invalidHotkey" | "invalidSetting" | "invalidAppName";

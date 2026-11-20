@@ -11,6 +11,10 @@ use clipvault_application::{AppError, HotkeyConflict};
 use clipvault_domain::clip::{ClipContent, ClipItem};
 use clipvault_domain::hotkey::HotkeyError;
 use clipvault_domain::ids::SnippetId;
+use clipvault_domain::retention::{MaxItems, RetentionPeriod, RetentionPolicy};
+use clipvault_domain::settings::{
+    CaptureSettings, LanguagePreference, Settings, SettingsSection, ThemeMode,
+};
 use clipvault_domain::snippet::{Snippet, SnippetError};
 use serde::{Deserialize, Serialize};
 use ts_rs::TS;
@@ -198,12 +202,14 @@ pub enum BackdropDto {
 }
 
 /// Appearance applied by the UI.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, TS)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, TS)]
 #[serde(rename_all = "camelCase")]
 #[ts(export)]
 pub struct AppearanceDto {
     pub theme: ThemeDto,
     pub backdrop: BackdropDto,
+    /// Windows accent color for this theme (`#rrggbb`) when the user enabled it (THM-004).
+    pub accent: Option<String>,
 }
 
 /// State shown by the popup.
@@ -215,6 +221,8 @@ pub struct PopupStateDto {
     pub open_shortcut: String,
     pub capture_paused: bool,
     pub appearance: AppearanceDto,
+    /// Effective interface language, resolved by the backend (I18N-002).
+    pub locale: String,
 }
 
 /// Error category; the UI maps it to a translated message (specs/03 §6).
@@ -237,6 +245,10 @@ pub enum ErrorCodeDto {
     InvalidSnippet,
     /// Invalid shortcut; `detail` says which rule (HK-003).
     InvalidHotkey,
+    /// A setting value that is not offered (CAP-006, RET-001/002).
+    InvalidSetting,
+    /// A blank application name (CAP-009).
+    InvalidAppName,
 }
 
 /// Error returned by every command.
@@ -294,6 +306,8 @@ impl From<AppError> for CommandError {
                 ErrorCodeDto::InvalidHotkey,
                 Some(hotkey_rule(rule).to_owned()),
             ),
+            AppError::InvalidSetting(_) => (ErrorCodeDto::InvalidSetting, None),
+            AppError::InvalidAppName(_) => (ErrorCodeDto::InvalidAppName, None),
         };
         Self {
             code,
@@ -379,6 +393,237 @@ impl From<SuspensionDto> for Suspension {
         match dto {
             SuspensionDto::Active => Self::Active,
             SuspensionDto::Suspended => Self::Suspended,
+        }
+    }
+}
+
+/// Interface language preference (I18N-002).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, TS)]
+#[serde(rename_all = "camelCase")]
+#[ts(export)]
+pub enum LanguageDto {
+    System,
+    PtBr,
+    En,
+}
+
+impl From<LanguagePreference> for LanguageDto {
+    fn from(value: LanguagePreference) -> Self {
+        match value {
+            LanguagePreference::System => Self::System,
+            LanguagePreference::PtBr => Self::PtBr,
+            LanguagePreference::En => Self::En,
+        }
+    }
+}
+
+impl From<LanguageDto> for LanguagePreference {
+    fn from(value: LanguageDto) -> Self {
+        match value {
+            LanguageDto::System => Self::System,
+            LanguageDto::PtBr => Self::PtBr,
+            LanguageDto::En => Self::En,
+        }
+    }
+}
+
+/// Theme preference (THM-001).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, TS)]
+#[serde(rename_all = "camelCase")]
+#[ts(export)]
+pub enum ThemeModeDto {
+    System,
+    Light,
+    Dark,
+}
+
+impl From<ThemeMode> for ThemeModeDto {
+    fn from(value: ThemeMode) -> Self {
+        match value {
+            ThemeMode::System => Self::System,
+            ThemeMode::Light => Self::Light,
+            ThemeMode::Dark => Self::Dark,
+        }
+    }
+}
+
+impl From<ThemeModeDto> for ThemeMode {
+    fn from(value: ThemeModeDto) -> Self {
+        match value {
+            ThemeModeDto::System => Self::System,
+            ThemeModeDto::Light => Self::Light,
+            ThemeModeDto::Dark => Self::Dark,
+        }
+    }
+}
+
+/// Retention policy (RET-001/002); `null` means no limit.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, TS)]
+#[serde(rename_all = "camelCase")]
+#[ts(export)]
+pub struct RetentionDto {
+    pub max_age_days: Option<u32>,
+    pub max_items: Option<u32>,
+}
+
+impl From<RetentionPolicy> for RetentionDto {
+    fn from(policy: RetentionPolicy) -> Self {
+        Self {
+            max_age_days: policy.period.days(),
+            max_items: policy.max_items.limit(),
+        }
+    }
+}
+
+impl TryFrom<RetentionDto> for RetentionPolicy {
+    type Error = CommandError;
+
+    fn try_from(dto: RetentionDto) -> Result<Self, Self::Error> {
+        let invalid = |error: clipvault_domain::retention::RetentionError| CommandError {
+            code: ErrorCodeDto::InvalidSetting,
+            detail: None,
+            message: error.to_string(),
+        };
+        Ok(Self {
+            period: RetentionPeriod::from_days(dto.max_age_days).map_err(invalid)?,
+            max_items: MaxItems::from_count(dto.max_items).map_err(invalid)?,
+        })
+    }
+}
+
+/// Values the settings window offers in its selects.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, TS)]
+#[serde(rename_all = "camelCase")]
+#[ts(export)]
+pub struct SettingsOptionsDto {
+    pub max_age_days: Vec<Option<u32>>,
+    pub max_items: Vec<Option<u32>>,
+    #[ts(type = "number[]")]
+    pub text_limits: Vec<u64>,
+    #[ts(type = "number[]")]
+    pub image_limits: Vec<u64>,
+    /// Restored by "Restore defaults" in History; previewed before it removes items (RET-004).
+    pub default_retention: RetentionDto,
+}
+
+impl SettingsOptionsDto {
+    /// The options defined by the domain (RET-001/002, CAP-006).
+    pub fn offered() -> Self {
+        Self {
+            max_age_days: RetentionPeriod::ALL.iter().map(|p| p.days()).collect(),
+            max_items: MaxItems::ALL.iter().map(|m| m.limit()).collect(),
+            text_limits: CaptureSettings::TEXT_LIMIT_OPTIONS.to_vec(),
+            image_limits: CaptureSettings::IMAGE_LIMIT_OPTIONS.to_vec(),
+            default_retention: RetentionPolicy::default().into(),
+        }
+    }
+}
+
+/// Every setting shown in the General, History, Privacy and Appearance sections (CFG-001).
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, TS)]
+#[serde(rename_all = "camelCase")]
+#[ts(export)]
+pub struct SettingsDto {
+    /// Effective interface language (I18N-002).
+    pub locale: String,
+    pub language: LanguageDto,
+    pub capture_paused: bool,
+    pub retention: RetentionDto,
+    pub clear_on_exit: bool,
+    #[ts(type = "number")]
+    pub max_text_bytes: u64,
+    #[ts(type = "number")]
+    pub max_image_bytes: u64,
+    pub excluded_apps: Vec<String>,
+    pub theme: ThemeModeDto,
+    pub use_accent_color: bool,
+    pub options: SettingsOptionsDto,
+}
+
+impl SettingsDto {
+    /// Maps `settings` with the effective `locale` tag.
+    pub fn new(settings: &Settings, locale: &str) -> Self {
+        Self {
+            locale: locale.to_owned(),
+            language: settings.ui.language.into(),
+            capture_paused: settings.capture.paused,
+            retention: settings.retention.policy.into(),
+            clear_on_exit: settings.retention.clear_on_exit,
+            max_text_bytes: settings.capture.max_text_bytes,
+            max_image_bytes: settings.capture.max_image_bytes,
+            excluded_apps: settings
+                .capture
+                .excluded_apps
+                .iter()
+                .map(|a| a.as_str().to_owned())
+                .collect(),
+            theme: settings.ui.theme.into(),
+            use_accent_color: settings.ui.use_accent_color,
+            options: SettingsOptionsDto::offered(),
+        }
+    }
+}
+
+/// Which size limit to change (CAP-006).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize, TS)]
+#[serde(rename_all = "camelCase")]
+#[ts(export)]
+pub enum SizeLimitDto {
+    Text,
+    Image,
+}
+
+/// A section with a "Restore defaults" button (CFG-004).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize, TS)]
+#[serde(rename_all = "camelCase")]
+#[ts(export)]
+pub enum SettingsSectionDto {
+    General,
+    History,
+    Shortcuts,
+    Privacy,
+    Appearance,
+}
+
+impl From<SettingsSectionDto> for SettingsSection {
+    fn from(dto: SettingsSectionDto) -> Self {
+        match dto {
+            SettingsSectionDto::General => Self::General,
+            SettingsSectionDto::History => Self::History,
+            SettingsSectionDto::Shortcuts => Self::Shortcuts,
+            SettingsSectionDto::Privacy => Self::Privacy,
+            SettingsSectionDto::Appearance => Self::Appearance,
+        }
+    }
+}
+
+/// The "Sobre" section (CFG-005).
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, TS)]
+#[serde(rename_all = "camelCase")]
+#[ts(export)]
+pub struct AboutDto {
+    pub version: String,
+}
+
+/// Links of the "Sobre" section; the URLs stay in the backend (CFG-005, SEC-004).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize, TS)]
+#[serde(rename_all = "camelCase")]
+#[ts(export)]
+pub enum AboutLinkDto {
+    Privacy,
+    Licenses,
+    Support,
+}
+
+impl AboutLinkDto {
+    /// The fixed address of the link.
+    pub const fn url(self) -> &'static str {
+        match self {
+            Self::Privacy => "https://github.com/flvrm92/clipvault/blob/main/PRIVACY.md",
+            Self::Licenses => {
+                "https://github.com/flvrm92/clipvault/blob/main/THIRD-PARTY-NOTICES.md"
+            }
+            Self::Support => "https://github.com/flvrm92/clipvault/issues",
         }
     }
 }
@@ -487,6 +732,87 @@ mod tests {
         assert_eq!(reserved.detail.as_deref(), Some("reserved"));
         assert_eq!(blank.detail.as_deref(), Some("nameBlank"));
         assert_eq!(in_use.code, ErrorCodeDto::InUse);
+    }
+
+    #[test]
+    fn cfg_001_settings_serialize_with_the_offered_options() {
+        let value = serde_json::to_value(SettingsDto::new(&Settings::default(), "pt-BR")).unwrap();
+
+        assert_eq!(value["locale"], "pt-BR");
+        assert_eq!(value["language"], "system");
+        assert_eq!(
+            value["retention"],
+            json!({"maxAgeDays": 30, "maxItems": 1000})
+        );
+        assert_eq!(
+            value["options"]["maxAgeDays"],
+            json!([1, 7, 30, 90, 365, null])
+        );
+        assert_eq!(
+            value["options"]["maxItems"],
+            json!([100, 500, 1000, 5000, null])
+        );
+        assert_eq!(value["maxTextBytes"], json!(1_048_576));
+        assert_eq!(value["theme"], "system");
+    }
+
+    #[test]
+    fn ret_001_only_offered_retention_values_are_accepted() {
+        let valid = RetentionDto {
+            max_age_days: None,
+            max_items: Some(5_000),
+        };
+        let invalid = RetentionDto {
+            max_age_days: Some(2),
+            max_items: Some(5_000),
+        };
+
+        assert_eq!(
+            RetentionPolicy::try_from(valid).unwrap(),
+            RetentionPolicy {
+                period: RetentionPeriod::Forever,
+                max_items: MaxItems::FiveThousand
+            }
+        );
+        assert_eq!(
+            RetentionPolicy::try_from(invalid).unwrap_err().code,
+            ErrorCodeDto::InvalidSetting
+        );
+    }
+
+    #[test]
+    fn cfg_005_about_links_point_to_fixed_https_addresses() {
+        for link in [
+            AboutLinkDto::Privacy,
+            AboutLinkDto::Licenses,
+            AboutLinkDto::Support,
+        ] {
+            assert!(
+                link.url()
+                    .starts_with("https://github.com/flvrm92/clipvault/")
+            );
+        }
+        let link: AboutLinkDto = serde_json::from_value(json!("support")).unwrap();
+        assert_eq!(link, AboutLinkDto::Support);
+    }
+
+    #[test]
+    fn i18n_002_language_and_theme_round_trip() {
+        for language in [LanguageDto::System, LanguageDto::PtBr, LanguageDto::En] {
+            assert_eq!(
+                LanguageDto::from(LanguagePreference::from(language)),
+                language
+            );
+        }
+        for theme in [
+            ThemeModeDto::System,
+            ThemeModeDto::Light,
+            ThemeModeDto::Dark,
+        ] {
+            assert_eq!(ThemeModeDto::from(ThemeMode::from(theme)), theme);
+        }
+        let language: LanguageDto = serde_json::from_value(json!("ptBr")).unwrap();
+        assert_eq!(language, LanguageDto::PtBr);
     }
 
     #[test]

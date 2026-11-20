@@ -19,7 +19,16 @@ describe('App', () => {
     render(App);
 
     expect(
-      await screen.findByRole('heading', { level: 1, name: t('settings.shortcuts.heading') }),
+      await screen.findByRole('heading', { level: 1, name: t('settings.general.heading') }),
+    ).toBeInTheDocument();
+  });
+
+  it('[TRAY-002] opens the settings window on the section in the URL fragment', async () => {
+    history.replaceState(null, '', '/?view=settings#about');
+    render(App);
+
+    expect(
+      await screen.findByRole('heading', { level: 1, name: t('settings.about.heading') }),
     ).toBeInTheDocument();
   });
 

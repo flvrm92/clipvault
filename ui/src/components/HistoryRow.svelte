@@ -1,7 +1,7 @@
 <script lang="ts">
   import type { ClipItemDto } from '../api/bindings/ClipItemDto';
   import { thumbnailUrl } from '../api/client';
-  import { currentLocale, t } from '../i18n';
+  import { getLocale, t } from '../i18n';
   import { relativeTime } from '../lib/time';
   import Icon from './Icon.svelte';
 
@@ -54,7 +54,7 @@
     {#if item.pinned}
       <span class="pinned" title={t('popup.item.pinned')}><Icon name="pinFilled" size={14} /></span>
     {/if}
-    <span class="time">{relativeTime(item.lastUsedAt, now, currentLocale)}</span>
+    <span class="time">{relativeTime(item.lastUsedAt, now, getLocale())}</span>
   </span>
 
   <span class="actions">

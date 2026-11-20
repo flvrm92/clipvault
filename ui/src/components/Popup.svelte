@@ -5,7 +5,8 @@
   import type { KindFilterDto } from '../api/bindings/KindFilterDto';
   import type { PopupStateDto } from '../api/bindings/PopupStateDto';
   import type { SnippetDto } from '../api/bindings/SnippetDto';
-  import { t } from '../i18n';
+  import { setLocale, t } from '../i18n';
+  import { applyAppearance } from '../lib/appearance';
   import { FILTERS, HistoryStore } from '../lib/history.svelte';
   import { resolveKey, type KeyAction } from '../lib/keyboard';
   import BrandMark from '../lib/BrandMark.svelte';
@@ -81,8 +82,8 @@
 
   async function refreshState() {
     popupState = await api.getPopupState();
-    document.documentElement.dataset.theme = popupState.appearance.theme;
-    document.documentElement.dataset.backdrop = popupState.appearance.backdrop;
+    applyAppearance(popupState.appearance);
+    setLocale(popupState.locale);
   }
 
   async function opened() {
@@ -190,6 +191,7 @@
       api.on('history://changed', () => void store.reload()),
       api.on('capture://changed', () => void refreshState()),
       api.on('appearance://changed', () => void refreshState()),
+      api.on('settings://changed', () => void refreshState()),
     ];
     void opened();
     return () => subscriptions.forEach((s) => void s.then((unlisten) => unlisten()));

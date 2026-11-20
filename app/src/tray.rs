@@ -10,6 +10,7 @@ use tauri::{AppHandle, Manager, Wry};
 use crate::container::Container;
 use crate::i18n::Translator;
 use crate::popup;
+use crate::settings_window::Page;
 
 const TRAY_ID: &str = "main";
 
@@ -24,11 +25,18 @@ pub enum MenuAction {
     Open,
     TogglePause,
     Settings,
+    About,
     Quit,
 }
 
 impl MenuAction {
-    const ALL: [Self; 4] = [Self::Open, Self::TogglePause, Self::Settings, Self::Quit];
+    const ALL: [Self; 5] = [
+        Self::Open,
+        Self::TogglePause,
+        Self::Settings,
+        Self::About,
+        Self::Quit,
+    ];
 
     /// Stable menu item identifier.
     pub fn id(self) -> &'static str {
@@ -36,7 +44,19 @@ impl MenuAction {
             Self::Open => "open",
             Self::TogglePause => "toggle-pause",
             Self::Settings => "settings",
+            Self::About => "about",
             Self::Quit => "quit",
+        }
+    }
+
+    /// Translation key of the label; the pause item follows the capture state.
+    pub const fn label_key(self, state: CaptureState) -> &'static str {
+        match self {
+            Self::Open => "tray.open",
+            Self::TogglePause => pause_label_key(state),
+            Self::Settings => "tray.settings",
+            Self::About => "tray.about",
+            Self::Quit => "tray.quit",
         }
     }
 
@@ -73,9 +93,9 @@ pub const fn tooltip_key(state: CaptureState) -> &'static str {
     }
 }
 
-/// The menu item whose label follows the capture state.
+/// The menu items, relabeled on capture-state and language changes (TRAY-003, I18N-002).
 pub struct TrayMenu {
-    pause: MenuItem<Wry>,
+    items: Vec<(MenuAction, MenuItem<Wry>)>,
 }
 
 fn capture_state(app: &AppHandle<Wry>) -> CaptureState {
@@ -103,24 +123,28 @@ fn toggle_pause(app: &AppHandle<Wry>) {
 /// Fails if the native menu or tray icon cannot be created.
 pub fn create(app: &AppHandle<Wry>) -> tauri::Result<()> {
     let translator = app.state::<Translator>();
-    let item = |action: MenuAction, key: &str| {
-        MenuItem::with_id(app, action.id(), translator.t(key), true, None::<&str>)
-    };
-    let open = item(MenuAction::Open, "tray.open")?;
-    let pause = item(MenuAction::TogglePause, "tray.pause")?;
-    let settings = item(MenuAction::Settings, "tray.settings")?;
-    let quit = item(MenuAction::Quit, "tray.quit")?;
-    let menu = Menu::with_items(
-        app,
-        &[
-            &open,
-            &pause,
-            &settings,
-            &PredefinedMenuItem::separator(app)?,
-            &quit,
-        ],
-    )?;
-    app.manage(TrayMenu { pause });
+    let state = capture_state(app);
+    let items = MenuAction::ALL
+        .into_iter()
+        .map(|action| {
+            MenuItem::with_id(
+                app,
+                action.id(),
+                translator.t(action.label_key(state)),
+                true,
+                None::<&str>,
+            )
+            .map(|item| (action, item))
+        })
+        .collect::<tauri::Result<Vec<_>>>()?;
+    let menu = Menu::new(app)?;
+    for (action, item) in &items {
+        if *action == MenuAction::Quit {
+            menu.append(&PredefinedMenuItem::separator(app)?)?;
+        }
+        menu.append(item)?;
+    }
+    app.manage(TrayMenu { items });
 
     TrayIconBuilder::with_id(TRAY_ID)
         .menu(&menu)
@@ -129,13 +153,8 @@ pub fn create(app: &AppHandle<Wry>) -> tauri::Result<()> {
             |app, event| match MenuAction::from_id(event.id().as_ref()) {
                 Some(MenuAction::Open) => popup::show(app),
                 Some(MenuAction::TogglePause) => toggle_pause(app),
-                Some(MenuAction::Settings) => {
-                    // Created off the event thread, like the async `open_settings` command.
-                    let app = app.clone();
-                    tauri::async_runtime::spawn(async move {
-                        crate::commands::open_settings_window(&app);
-                    });
-                }
+                Some(MenuAction::Settings) => open_settings(app, Page::General),
+                Some(MenuAction::About) => open_settings(app, Page::About),
                 Some(MenuAction::Quit) => app.exit(0),
                 None => {}
             },
@@ -155,12 +174,23 @@ pub fn create(app: &AppHandle<Wry>) -> tauri::Result<()> {
     Ok(())
 }
 
-/// Updates icon, tooltip and menu label after a capture-state or taskbar-theme change.
+fn open_settings(app: &AppHandle<Wry>, page: Page) {
+    // Created off the event thread, like the async `open_settings` command.
+    let app = app.clone();
+    tauri::async_runtime::spawn(async move {
+        crate::commands::open_settings_window(&app, page);
+    });
+}
+
+/// Updates icon, tooltip and menu labels after a capture-state, taskbar-theme or language
+/// change.
 pub fn refresh(app: &AppHandle<Wry>) {
     let state = capture_state(app);
     let translator = app.state::<Translator>();
     if let Some(menu) = app.try_state::<TrayMenu>() {
-        let _ = menu.pause.set_text(translator.t(pause_label_key(state)));
+        for (action, item) in &menu.items {
+            let _ = item.set_text(translator.t(action.label_key(state)));
+        }
     }
     let Some(tray) = app.tray_by_id(TRAY_ID) else {
         return;
@@ -185,6 +215,29 @@ mod tests {
             assert_eq!(MenuAction::from_id(action.id()), Some(action));
         }
         assert_eq!(MenuAction::from_id("unknown"), None);
+    }
+
+    #[test]
+    fn tray_002_menu_lists_the_specified_actions_in_order() {
+        let keys: Vec<_> = MenuAction::ALL
+            .into_iter()
+            .map(|a| a.label_key(CaptureState::Active))
+            .collect();
+
+        assert_eq!(
+            keys,
+            [
+                "tray.open",
+                "tray.pause",
+                "tray.settings",
+                "tray.about",
+                "tray.quit"
+            ]
+        );
+        assert_eq!(
+            MenuAction::TogglePause.label_key(CaptureState::Paused),
+            "tray.resume"
+        );
     }
 
     #[test]
@@ -218,6 +271,7 @@ mod tests {
                 "tray.resume",
                 "tray.quit",
                 "tray.settings",
+                "tray.about",
                 "notification.shortcutsUnavailable",
                 "tray.tooltip",
                 "tray.tooltipPaused",
