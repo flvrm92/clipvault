@@ -107,7 +107,7 @@ Texto vazio ou composto apenas por espaços em branco não é registrado.
 
 ### CAP-006 · Limites de tamanho — M
 - Texto acima do limite configurado (padrão **1 MB**, UTF-8) não é registrado; o evento é logado.
-- Imagem acima do limite configurado (padrão **25 MB** em bitmap descomprimido) não é registrada.
+- Imagem acima do limite configurado (padrão **64 MiB** em bitmap RGBA descomprimido, o que comporta prints de monitores 4K e 5K) não é registrada.
 
 ### CAP-007 · Respeitar sinalizadores de privacidade — M
 Não registrar o conteúdo quando o clipboard contiver qualquer um dos formatos:

@@ -12,7 +12,7 @@ fn defaults_match_the_specification() {
 
     assert!(!s.capture.paused);
     assert_eq!(s.capture.max_text_bytes, 1_048_576);
-    assert_eq!(s.capture.max_image_bytes, 26_214_400);
+    assert_eq!(s.capture.max_image_bytes, 67_108_864);
     assert_eq!(s.capture.excluded_apps, vec![]);
     assert_eq!(s.retention.policy.period, RetentionPeriod::ThirtyDays);
     assert_eq!(s.retention.policy.max_items, MaxItems::Thousand);

@@ -14,6 +14,7 @@ publish = false
 # Layer crates — dependency rule: specs/03 §1, enforced by `cargo xtask check-arch`.
 clipvault-domain = { path = "crates/domain" }
 clipvault-application = { path = "crates/application" }
+clipvault-infrastructure = { path = "crates/infrastructure" }
 clipvault-test-support = { path = "crates/test-support" }
 
 # specs/02 REL-004 · MNT-002

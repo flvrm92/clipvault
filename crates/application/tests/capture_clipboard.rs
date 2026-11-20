@@ -220,3 +220,53 @@ fn settings_are_read_on_every_capture() {
 
     assert_eq!(outcome, CaptureOutcome::Ignored(IgnoreReason::TooLarge));
 }
+
+#[test]
+fn ret_004_the_item_limit_is_enforced_on_every_capture() {
+    use clipvault_domain::retention::{MaxItems, RetentionPeriod, RetentionPolicy};
+    let f = Fixture::new();
+    f.settings.update(|s| {
+        s.retention.policy = RetentionPolicy {
+            period: RetentionPeriod::OneDay,
+            max_items: MaxItems::Hundred,
+        };
+    });
+    for i in 0..100 {
+        f.clock.advance(Duration::from_millis(1));
+        f.capture(snapshot::text(&format!("item {i}")).build())
+            .unwrap();
+    }
+    let oldest = f.history.items()[0].id;
+
+    f.clock.advance(Duration::from_millis(1));
+    f.capture(snapshot::text("item 100").build()).unwrap();
+
+    assert_eq!(f.history.len(), 100);
+    assert_eq!(
+        f.history.get(oldest),
+        None,
+        "least recently used item removed"
+    );
+}
+
+#[test]
+fn ret_004_the_age_rule_is_not_applied_on_capture() {
+    use clipvault_domain::retention::{MaxItems, RetentionPeriod, RetentionPolicy};
+    let f = Fixture::new();
+    f.settings.update(|s| {
+        s.retention.policy = RetentionPolicy {
+            period: RetentionPeriod::OneDay,
+            max_items: MaxItems::Unlimited,
+        };
+    });
+    f.capture(snapshot::text("old").build()).unwrap();
+    f.clock.advance(Duration::from_hours(72));
+
+    f.capture(snapshot::text("new").build()).unwrap();
+
+    assert_eq!(
+        f.history.len(),
+        2,
+        "age expiry runs at startup and hourly, not per capture"
+    );
+}

@@ -2,6 +2,19 @@ use super::*;
 use crate::hash::ContentHash;
 
 #[test]
+fn thumbnail_keeps_small_images_and_scales_the_longest_side_to_the_limit() {
+    assert_eq!(thumbnail_size(200, 100), (200, 100));
+    assert_eq!(thumbnail_size(320, 320), (320, 320));
+    assert_eq!(thumbnail_size(4000, 1000), (320, 80));
+    assert_eq!(thumbnail_size(1000, 4000), (80, 320));
+    assert_eq!(
+        thumbnail_size(10_000, 1),
+        (320, 1),
+        "never collapses to zero"
+    );
+}
+
+#[test]
 fn pixels_require_rgba_buffer_matching_dimensions() {
     assert!(ImagePixels::new(2, 2, vec![0; 16]).is_ok());
     assert_eq!(

@@ -85,6 +85,23 @@ impl ImagePixels {
     }
 }
 
+/// Longest side of a thumbnail, in pixels (specs/05 §4).
+pub const THUMBNAIL_MAX_SIDE: u32 = 320;
+
+/// Thumbnail dimensions: images within the limit keep their size; larger ones are scaled so
+/// the longest side equals [`THUMBNAIL_MAX_SIDE`], keeping the aspect ratio (min. 1 px).
+pub fn thumbnail_size(width: u32, height: u32) -> (u32, u32) {
+    let longest = width.max(height);
+    if longest <= THUMBNAIL_MAX_SIDE {
+        return (width, height);
+    }
+    let scale = |side: u32| {
+        let scaled = u64::from(side) * u64::from(THUMBNAIL_MAX_SIDE) / u64::from(longest);
+        u32::try_from(scaled).unwrap_or(THUMBNAIL_MAX_SIDE).max(1)
+    };
+    (scale(width), scale(height))
+}
+
 /// Identifier of an image file on disk: the hex content hash. Never a path (SEC-003).
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct FileKey(String);

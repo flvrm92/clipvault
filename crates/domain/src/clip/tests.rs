@@ -29,6 +29,15 @@ fn content_reports_kind_and_byte_size() {
 }
 
 #[test]
+fn pin_state_converts_from_and_to_the_stored_flag() {
+    assert_eq!(PinState::from_flag(true), PinState::Pinned);
+    assert_eq!(PinState::from_flag(false), PinState::Unpinned);
+    assert!(PinState::Pinned.is_pinned());
+    assert_eq!(PinState::Pinned.toggled(), PinState::Unpinned);
+    assert_eq!(PinState::Unpinned.toggled(), PinState::Pinned);
+}
+
+#[test]
 fn item_exposes_its_retention_view() {
     let item = ClipItem {
         id: ClipId::new(3),

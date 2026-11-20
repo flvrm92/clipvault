@@ -164,7 +164,7 @@ Componentes de apoio em `application::capture`:
 | `capture-worker` | Consome eventos, executa `CaptureClipboard` (inclui encode PNG); publica `HistoryChanged` |
 | `maintenance` | Timer horário de `PurgeExpired` |
 
-Comunicação por canais (`crossbeam-channel` ou `std::sync::mpsc`). O acesso ao SQLite usa uma conexão por thread com WAL (ou pool `r2d2_sqlite` pequeno).
+Comunicação por canais (`crossbeam-channel` ou `std::sync::mpsc`). O SQLite é acessado por **uma única conexão protegida por mutex** e compartilhada pelos repositórios (ADR-0003). Trocar por um pool só com contenção medida.
 
 ## 5. Fluxos principais
 

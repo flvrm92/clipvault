@@ -58,6 +58,9 @@
 - Tokens: contraste AA em ambos os temas (A11Y-002).
 - Acessibilidade: `axe-core` sem violações nas telas principais.
 
+### Desempenho
+- `crates/infrastructure/tests/perf.rs`: testes `#[ignore]` que medem o p95 de PERF-002..004 com os adaptadores reais. Rodar em release na máquina de referência antes de cada release: `cargo test -p clipvault-infrastructure --release --test perf -- --ignored --nocapture`. Ficam fora do CI porque runners compartilhados não dão tempos estáveis.
+
 ### Privacidade
 - **Teste sentinela (PRIV-003):** captura um texto `SENTINEL-<uuid>`, executa fluxos principais com log em nível `trace` e verifica que o sentinela não aparece em nenhum arquivo de log.
 

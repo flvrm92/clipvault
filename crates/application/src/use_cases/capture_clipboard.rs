@@ -6,7 +6,9 @@ use clipvault_domain::capture::{CaptureDecision, CapturedContent, IgnoreReason, 
 use clipvault_domain::clip::{ClipContent, NewClipItem};
 use clipvault_domain::ids::ClipId;
 use clipvault_domain::image::{FileKey, ImageMeta};
+use clipvault_domain::retention::{RetentionPeriod, RetentionPolicy};
 
+use super::maintenance::apply_retention;
 use crate::AppError;
 use crate::capture::{CaptureContext, CapturePipeline, OwnWriteRegistry};
 use crate::ports::{
@@ -76,7 +78,22 @@ impl CaptureClipboard {
             .evaluate(CaptureContext::new(snapshot, settings.capture))?;
 
         let outcome = match decision {
-            CaptureDecision::Store(clip) => CaptureOutcome::Stored(self.store(clip)?),
+            CaptureDecision::Store(clip) => {
+                let id = self.store(clip)?;
+                // RET-004: only the count rule runs per capture; age expiry runs at startup
+                // and hourly (PurgeExpired).
+                let count_only = RetentionPolicy {
+                    period: RetentionPeriod::Forever,
+                    ..settings.retention.policy
+                };
+                apply_retention(
+                    self.history.as_ref(),
+                    self.images.as_ref(),
+                    count_only,
+                    self.clock.now(),
+                )?;
+                CaptureOutcome::Stored(id)
+            }
             CaptureDecision::Promote(id) => {
                 self.history.touch(id, self.clock.now())?;
                 CaptureOutcome::Promoted(id)

@@ -48,7 +48,7 @@ impl Default for CaptureSettings {
         Self {
             paused: false,
             max_text_bytes: 1024 * 1024,
-            max_image_bytes: 25 * 1024 * 1024,
+            max_image_bytes: 64 * 1024 * 1024,
             excluded_apps: Vec::new(),
         }
     }

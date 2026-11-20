@@ -11,6 +11,7 @@
 | **M1 — Domínio** | Value objects, entidades, `RetentionPolicy`, `Hotkey`, pipeline de filtros com fakes (TDD) | CAP-003..008, CAP-010, CAP-012, RET-001..003, HK-003, SNP-001 (regras) | Cobertura `domain` ≥ 95%, `application` ≥ 90%; property tests |
 | ↳ *status M1* | ✅ Concluído (2026-11-20): domínio com 100% de cobertura de linhas, aplicação com 98%; property tests de `Hotkey` e `RetentionPolicy`. | | |
 | **M2 — Persistência** | SQLite + migrações, repositórios, `ImageStore`, reconciliação, benchmarks | HIST-001..007 (backend), RET-004..005, REL-001..006, PERF-002..004 | Contract tests verdes p/ fakes e reais; benchmarks dentro das metas |
+| ↳ *status M2* | ✅ Concluído (2026-11-20): contratos verdes para fakes e adaptadores reais; p95 medido: texto 0,2 ms, imagem 4K 379 ms, busca 1,7 ms. REL-003 (retentativas de leitura do clipboard) e REL-007 (logs em arquivo) ficaram para o M3, junto do adaptador Win32. | | |
 | **M3 — Captura real** | Adaptadores Win32 de clipboard (listener, leitura, escrita, flags), worker de captura | CAP-001..012, PRIV-003..004 | Copiar em qualquer app → item no banco; teste sentinela de log |
 | **M4 — Popup e colagem** | Tray, popup pré-criado, lista virtualizada, busca, filtros, colar com retorno de foco, temas | TRAY-*, HIST-*, PST-*, HK-005, THM-001..003 | E2E: abrir → buscar → colar no Notepad; PERF-001 |
 | **M5 — Atalhos e snippets** | `RegisterHotKey`, gravador de atalho, CRUD de snippets, colagem por atalho, restauração do clipboard | HK-*, SNP-* | E2E: `Ctrl+Shift+V` cola "Teste de texto" no Notepad |

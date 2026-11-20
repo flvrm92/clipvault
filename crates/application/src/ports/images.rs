@@ -14,6 +14,8 @@ pub struct StoredImage {
 }
 
 /// Image files on disk (ADR-0004, specs/05 §4).
+///
+/// Every implementation must pass `clipvault_test_support::image_store_contract!`.
 pub trait ImageStore: Send + Sync {
     /// Writes the image and its thumbnail atomically under `key` (REL-002).
     ///
@@ -26,4 +28,10 @@ pub trait ImageStore: Send + Sync {
     /// # Errors
     /// [`PortError::Storage`] on failure.
     fn remove(&self, key: &FileKey) -> Result<(), PortError>;
+
+    /// Keys of every stored original image (RET-005).
+    ///
+    /// # Errors
+    /// [`PortError::Storage`] on failure.
+    fn keys(&self) -> Result<Vec<FileKey>, PortError>;
 }

@@ -1,26 +1,25 @@
 //! In-memory fakes of the application ports (pattern: Fake — specs/04 §P-11).
 //!
-//! From M2 on, each fake must pass the same contract tests as its real adapter.
+//! Each fake passes the same contract tests as its real adapter (`tests/fake_contracts.rs`).
 
 use std::collections::BTreeMap;
 use std::sync::Mutex;
 use std::time::Duration;
 
 use clipvault_application::ports::{
-    AppEvent, Clock, EventPublisher, HistoryRepository, ImageStore, PortError, SettingsRepository,
-    StoredImage,
+    AppEvent, ClearScope, Clock, EventPublisher, HistoryQuery, HistoryRepository, ImageStore,
+    KindFilter, Page, PortError, Removal, SettingsRepository, StoredImage,
 };
-use clipvault_domain::clip::{ClipContent, ClipItem, NewClipItem};
+use clipvault_domain::clip::{ClipContent, ClipItem, NewClipItem, PinState};
 use clipvault_domain::hash::ContentHash;
 use clipvault_domain::ids::ClipId;
-use clipvault_domain::image::{FileKey, ImagePixels};
+use clipvault_domain::image::{FileKey, ImagePixels, thumbnail_size};
+use clipvault_domain::retention::RetentionCandidate;
 use clipvault_domain::settings::Settings;
-use clipvault_domain::text::ClipText;
+use clipvault_domain::text::{ClipText, normalize_for_search};
 use clipvault_domain::time::Timestamp;
 
 use crate::lock;
-
-const THUMB_MAX_SIDE: u32 = 320;
 
 /// A clock that only moves when told to.
 #[derive(Debug)]
@@ -52,6 +51,30 @@ impl Clock for FixedClock {
     fn now(&self) -> Timestamp {
         *lock(&self.now)
     }
+}
+
+fn image_key(item: &ClipItem) -> Option<FileKey> {
+    match &item.content {
+        ClipContent::Image(meta) => Some(meta.file_key.clone()),
+        ClipContent::Text(_) => None,
+    }
+}
+
+fn matches_query(item: &ClipItem, query: &HistoryQuery) -> bool {
+    let kind_ok = match query.filter {
+        KindFilter::All => true,
+        KindFilter::Text => matches!(item.content, ClipContent::Text(_)),
+        KindFilter::Images => matches!(item.content, ClipContent::Image(_)),
+        KindFilter::Pinned => item.pinned,
+    };
+    let search_ok = query
+        .search
+        .as_deref()
+        .is_none_or(|term| match &item.content {
+            ClipContent::Text(text) => text.search_form().contains(&normalize_for_search(term)),
+            ClipContent::Image(_) => false,
+        });
+    kind_ok && search_ok
 }
 
 #[derive(Debug, Default)]
@@ -98,9 +121,6 @@ impl InMemoryHistoryRepository {
     }
 
     /// Inserts a text item captured at time zero.
-    ///
-    /// # Panics
-    /// If `text` is blank.
     pub fn seed_text(&self, text: &str) -> ClipId {
         let text = ClipText::new(text).unwrap_or_else(|e| panic!("invalid seed text: {e}"));
         let item = NewClipItem {
@@ -116,6 +136,30 @@ impl InMemoryHistoryRepository {
     /// Makes the next [`HistoryRepository::insert`] fail with a storage error.
     pub fn fail_next_insert(&self) {
         lock(&self.state).fail_next_insert = true;
+    }
+
+    fn with_item<T>(
+        &self,
+        id: ClipId,
+        change: impl FnOnce(&mut ClipItem) -> T,
+    ) -> Result<T, PortError> {
+        let mut state = lock(&self.state);
+        let item = state
+            .items
+            .iter_mut()
+            .find(|i| i.id == id)
+            .ok_or(PortError::NotFound)?;
+        Ok(change(item))
+    }
+
+    fn remove_where(&self, condition: impl Fn(&ClipItem) -> bool) -> Removal {
+        let mut state = lock(&self.state);
+        let (removed, kept): (Vec<_>, Vec<_>) = state.items.drain(..).partition(condition);
+        state.items = kept;
+        Removal {
+            count: removed.len(),
+            image_keys: removed.iter().filter_map(image_key).collect(),
+        }
     }
 }
 
@@ -151,16 +195,72 @@ impl HistoryRepository for InMemoryHistoryRepository {
         Ok(id)
     }
 
-    fn touch(&self, id: ClipId, at: Timestamp) -> Result<(), PortError> {
-        let mut state = lock(&self.state);
-        let item = state
+    fn get(&self, id: ClipId) -> Result<Option<ClipItem>, PortError> {
+        Ok(Self::get(self, id))
+    }
+
+    fn list(&self, query: &HistoryQuery) -> Result<Page<ClipItem>, PortError> {
+        let mut matching: Vec<ClipItem> = lock(&self.state)
             .items
-            .iter_mut()
-            .find(|i| i.id == id)
+            .iter()
+            .filter(|i| matches_query(i, query))
+            .cloned()
+            .collect();
+        matching.sort_by(|a, b| {
+            (b.pinned, b.last_used_at, b.id).cmp(&(a.pinned, a.last_used_at, a.id))
+        });
+        let has_more = matching.len() > query.offset.saturating_add(query.limit);
+        let items = matching
+            .into_iter()
+            .skip(query.offset)
+            .take(query.limit)
+            .collect();
+        Ok(Page { items, has_more })
+    }
+
+    fn touch(&self, id: ClipId, at: Timestamp) -> Result<(), PortError> {
+        self.with_item(id, |item| {
+            item.last_used_at = at;
+            item.use_count += 1;
+        })
+    }
+
+    fn set_pin_state(&self, id: ClipId, state: PinState) -> Result<(), PortError> {
+        self.with_item(id, |item| item.pinned = state.is_pinned())
+    }
+
+    fn delete(&self, id: ClipId) -> Result<Option<FileKey>, PortError> {
+        let mut state = lock(&self.state);
+        let index = state
+            .items
+            .iter()
+            .position(|i| i.id == id)
             .ok_or(PortError::NotFound)?;
-        item.last_used_at = at;
-        item.use_count += 1;
-        Ok(())
+        Ok(image_key(&state.items.remove(index)))
+    }
+
+    fn delete_many(&self, ids: &[ClipId]) -> Result<Removal, PortError> {
+        Ok(self.remove_where(|i| ids.contains(&i.id)))
+    }
+
+    fn clear(&self, scope: ClearScope) -> Result<Removal, PortError> {
+        Ok(self.remove_where(|i| scope == ClearScope::Everything || !i.pinned))
+    }
+
+    fn retention_candidates(&self) -> Result<Vec<RetentionCandidate>, PortError> {
+        Ok(lock(&self.state)
+            .items
+            .iter()
+            .map(ClipItem::retention_candidate)
+            .collect())
+    }
+
+    fn image_entries(&self) -> Result<Vec<(ClipId, FileKey)>, PortError> {
+        Ok(lock(&self.state)
+            .items
+            .iter()
+            .filter_map(|i| image_key(i).map(|key| (i.id, key)))
+            .collect())
     }
 }
 
@@ -168,6 +268,7 @@ impl HistoryRepository for InMemoryHistoryRepository {
 struct ImageState {
     files: BTreeMap<FileKey, u64>,
     fail_next_save: bool,
+    fail_next_remove: bool,
 }
 
 /// Image files kept in memory (only their sizes).
@@ -201,6 +302,11 @@ impl InMemoryImageStore {
     pub fn fail_next_save(&self) {
         lock(&self.state).fail_next_save = true;
     }
+
+    /// Makes the next [`ImageStore::remove`] fail with a storage error.
+    pub fn fail_next_remove(&self) {
+        lock(&self.state).fail_next_remove = true;
+    }
 }
 
 impl ImageStore for InMemoryImageStore {
@@ -212,18 +318,7 @@ impl ImageStore for InMemoryImageStore {
         // Pretend PNG compresses to half the raw size.
         let file_size = (pixels.byte_len() as u64).div_ceil(2);
         state.files.insert(key.clone(), file_size);
-
-        let (w, h) = (pixels.width(), pixels.height());
-        let scale = |side: u32, other: u32| {
-            u32::try_from(u64::from(side) * u64::from(THUMB_MAX_SIDE) / u64::from(other))
-                .unwrap_or(1)
-                .max(1)
-        };
-        let (thumb_width, thumb_height) = match w.max(h) {
-            longest if longest <= THUMB_MAX_SIDE => (w, h),
-            _ if w >= h => (THUMB_MAX_SIDE, scale(h, w)),
-            _ => (scale(w, h), THUMB_MAX_SIDE),
-        };
+        let (thumb_width, thumb_height) = thumbnail_size(pixels.width(), pixels.height());
         Ok(StoredImage {
             file_size,
             thumb_width,
@@ -232,8 +327,16 @@ impl ImageStore for InMemoryImageStore {
     }
 
     fn remove(&self, key: &FileKey) -> Result<(), PortError> {
-        lock(&self.state).files.remove(key);
+        let mut state = lock(&self.state);
+        if std::mem::take(&mut state.fail_next_remove) {
+            return Err(PortError::Storage("simulated remove failure".into()));
+        }
+        state.files.remove(key);
         Ok(())
+    }
+
+    fn keys(&self) -> Result<Vec<FileKey>, PortError> {
+        Ok(lock(&self.state).files.keys().cloned().collect())
     }
 }
 
@@ -268,6 +371,11 @@ impl SettingsRepository for FixedSettings {
             return Err(PortError::Storage("simulated settings failure".into()));
         }
         Ok(state.settings.clone())
+    }
+
+    fn save(&self, settings: &Settings) -> Result<(), PortError> {
+        lock(&self.state).settings = settings.clone();
+        Ok(())
     }
 }
 

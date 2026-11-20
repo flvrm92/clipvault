@@ -2,11 +2,13 @@
 //!
 //! Wires adapters into use cases and exposes them to the UI. Contains no business rules.
 
+mod container;
 mod i18n;
 mod tray;
 
-use tauri::WindowEvent;
+use tauri::{Manager, WindowEvent};
 
+use crate::container::Container;
 use crate::i18n::{Locale, Translator};
 
 /// Builds and runs the Tauri application until the user quits from the tray.
@@ -18,6 +20,11 @@ pub fn run() -> tauri::Result<()> {
         .setup(|app| {
             let translator = Translator::new(Locale::system())?;
             tray::create(app.handle(), &translator)?;
+
+            let data_dir = app.path().app_local_data_dir()?;
+            let container = Container::build(&data_dir, app.handle().clone())?;
+            container.start_maintenance();
+            app.manage(container);
             Ok(())
         })
         .on_window_event(|window, event| {

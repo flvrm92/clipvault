@@ -13,7 +13,7 @@ mod settings;
 pub use clipboard::{ClipboardSequence, ClipboardSnapshot, PrivacyFlags};
 pub use clock::Clock;
 pub use events::{AppEvent, EventPublisher};
-pub use history::HistoryRepository;
+pub use history::{ClearScope, HistoryQuery, HistoryRepository, KindFilter, Page, Removal};
 pub use images::{ImageStore, StoredImage};
 pub use settings::SettingsRepository;
 

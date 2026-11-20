@@ -9,9 +9,9 @@
 | ID | Requisito | Meta | Como verificar |
 |----|-----------|------|----------------|
 | PERF-001 | Tempo entre o atalho global e o popup visível e com foco | p95 ≤ **150 ms** (popup pré-criado e oculto) | Teste E2E com timestamp + medição manual |
-| PERF-002 | Captura de texto até persistência | p95 ≤ **50 ms** | Benchmark (`criterion`) do pipeline com repositório real em arquivo temporário |
-| PERF-003 | Captura de imagem 4K até persistência (PNG + miniatura) | p95 ≤ **800 ms**, fora da thread de UI e da thread do listener | Benchmark |
-| PERF-004 | Busca em 5.000 itens | p95 ≤ **50 ms** | Benchmark de repositório |
+| PERF-002 | Captura de texto até persistência | p95 ≤ **50 ms** | Teste de desempenho ignorado por padrão (`crates/infrastructure/tests/perf.rs`, `--release --ignored`): p95 do caso de uso com SQLite em arquivo |
+| PERF-003 | Captura de imagem 4K até persistência (PNG + miniatura) | p95 ≤ **800 ms**, fora da thread de UI e da thread do listener | Idem (imagem 4K de ruído, pior caso para o PNG) |
+| PERF-004 | Busca em 5.000 itens | p95 ≤ **50 ms** | Idem (5.000 itens, termos variados) |
 | PERF-005 | Memória em repouso (popup oculto) | ≤ **80 MB** working set (inclui WebView2) | Medição manual por release |
 | PERF-006 | CPU em repouso | ~0% (sem polling; somente eventos) | Medição manual |
 | PERF-007 | Inicialização até ícone na bandeja | ≤ **1,5 s** a frio | Medição manual |

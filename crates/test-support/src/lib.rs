@@ -5,8 +5,14 @@
 #![forbid(unsafe_code)]
 // Test-only crate: failing fast on invalid fixtures is the desired behaviour (REL-004 covers
 // production code only).
-#![allow(clippy::panic, clippy::unwrap_used, clippy::expect_used)]
+#![allow(
+    clippy::panic,
+    clippy::unwrap_used,
+    clippy::expect_used,
+    clippy::missing_panics_doc
+)]
 
+pub mod contracts;
 mod fakes;
 pub mod snapshot;
 

@@ -17,6 +17,36 @@ pub enum ClipKind {
     Image,
 }
 
+/// Whether an item is pinned (HIST-005). Used instead of a boolean parameter (specs/04).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum PinState {
+    /// Kept on top and never expires.
+    Pinned,
+    /// Regular item.
+    Unpinned,
+}
+
+impl PinState {
+    /// From the stored flag.
+    pub const fn from_flag(pinned: bool) -> Self {
+        if pinned { Self::Pinned } else { Self::Unpinned }
+    }
+
+    /// Whether this is [`Self::Pinned`].
+    pub const fn is_pinned(self) -> bool {
+        matches!(self, Self::Pinned)
+    }
+
+    /// The opposite state.
+    #[must_use]
+    pub const fn toggled(self) -> Self {
+        match self {
+            Self::Pinned => Self::Unpinned,
+            Self::Unpinned => Self::Pinned,
+        }
+    }
+}
+
 /// Content of a persisted history item.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ClipContent {

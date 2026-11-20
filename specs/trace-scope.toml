@@ -9,4 +9,10 @@ enforced = [
   "RET-001", "RET-002", "RET-003",
   "HK-003",
   "SNP-001",
+  # M2 — Persistência
+  "HIST-001", "HIST-002", "HIST-003", "HIST-004", "HIST-005", "HIST-006", "HIST-007",
+  "RET-004", "RET-005",
+  "REL-001", "REL-002", "REL-005", "REL-006",
+  "CFG-006",
+  "PERF-002", "PERF-003", "PERF-004",
 ]
