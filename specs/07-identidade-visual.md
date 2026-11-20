@@ -1,6 +1,6 @@
 # 07 — Identidade visual
 
-> Status: Aprovada · v1.0 · 2026-11-20
+> Status: Aprovada · v1.1 · 2026-11-20
 
 ## 1. Conceito
 
@@ -34,16 +34,26 @@
 | `--surface-hover` | `#EEEEF4` | `#302F3A` |
 | `--surface-selected` | `#ECEBFF` | `#2E2A5C` |
 | `--border` | `#E1E0EA` | `#3A3946` |
+| `--border-strong` (contorno de campos: busca, select, texto, gravador de atalho) | `#858394` | `#7F7D90` |
 | `--text-primary` | `#1B1A24` | `#F2F1F7` |
 | `--text-secondary` | `#5C5A6B` | `#A9A7B8` |
-| `--accent` | `#4B3FD1` | `#8A82F2` |
+| `--accent` | `#4B3FD1` | `#9A93F5` |
 | `--accent-text` (sobre accent) | `#FFFFFF` | `#14131F` |
-| `--success` | `#0F8A7E` | `#2DD4BF` |
-| `--warning` | `#9A6700` | `#F5C451` |
+| `--success` | `#0B766C` | `#2DD4BF` |
+| `--warning` | `#8A5C00` | `#F5C451` |
 | `--danger` | `#C4314B` | `#FF8A9B` |
 | `--focus-ring` | `#4B3FD1` | `#A9A3FF` |
+| `--warning-surface` (faixa "captura pausada") | `#FFF4CE` | `#3D3017` |
+| `--inverse-surface` / `--inverse-text` (toast) | `--text-primary` / `--surface` | `--text-primary` / `--surface` |
+| `--inverse-accent` (ação no toast, ex.: "Desfazer") | `#A9A3FF` | `#4B3FD1` |
 
-> Todos os pares texto/fundo devem passar WCAG AA (A11Y-002). Um teste automatizado (Vitest) lê os tokens e valida as razões de contraste.
+> Todos os pares texto/fundo devem passar WCAG AA (A11Y-002). Um teste automatizado (Vitest) lê `ui/src/styles/tokens.css` e valida, nos dois temas:
+>
+> - **Texto ≥ 4,5:1:** `--text-primary`, `--text-secondary`, `--accent`, `--success`, `--warning` e `--danger` sobre `--surface`, `--surface-raised`, `--surface-hover` e `--surface-selected`; `--accent-text` sobre `--accent` e `--danger`; `--text-primary`, `--warning` e `--accent` sobre `--warning-surface`; `--inverse-text` e `--inverse-accent` sobre `--inverse-surface`.
+> - **Componentes ≥ 3:1:** `--border-strong` e `--focus-ring` sobre `--surface`, `--surface-raised` e `--surface-hover`.
+> - `--border` é só separador decorativo (linhas entre itens, contorno de cartões) e fica fora da verificação; campos interativos usam `--border-strong`.
+>
+> **v1.1 (M6):** para passar nessa verificação, `--success` e `--warning` do tema claro foram escurecidos, `--accent` e `--warning-surface` do tema escuro ajustados, e foram criados `--border-strong` e os tokens `--inverse-*` do toast. A cor de marca `brand-400` não muda; só o token semântico.
 
 ## 3. Tipografia
 

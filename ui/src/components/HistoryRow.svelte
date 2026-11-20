@@ -57,31 +57,31 @@
     <span class="time">{relativeTime(item.lastUsedAt, now, getLocale())}</span>
   </span>
 
-  <span class="actions">
-    <button
-      type="button"
-      tabindex="-1"
+  <!-- Pointer shortcuts only: Ctrl+P and Delete do the same from the keyboard (A11Y-001), and
+       interactive content inside an option is not allowed (A11Y-003). -->
+  <span class="actions" aria-hidden="true">
+    <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
+    <span
+      class="action"
       title={item.pinned ? t('popup.item.unpin') : t('popup.item.pin')}
-      aria-label={item.pinned ? t('popup.item.unpin') : t('popup.item.pin')}
       onclick={(e) => {
         e.stopPropagation();
         ontogglepin();
       }}
     >
       <Icon name={item.pinned ? 'pinFilled' : 'pin'} />
-    </button>
-    <button
-      type="button"
-      tabindex="-1"
+    </span>
+    <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
+    <span
+      class="action"
       title={t('popup.item.delete')}
-      aria-label={t('popup.item.delete')}
       onclick={(e) => {
         e.stopPropagation();
         ondelete();
       }}
     >
       <Icon name="delete" />
-    </button>
+    </span>
   </span>
 </div>
 
@@ -172,7 +172,8 @@
     display: flex;
   }
 
-  .actions button {
+  .action {
+    cursor: pointer;
     display: inline-flex;
     padding: 4px;
     border: 0;
@@ -181,7 +182,7 @@
     color: var(--text-secondary);
   }
 
-  .actions button:hover {
+  .action:hover {
     background: var(--surface-selected);
     color: var(--text-primary);
   }

@@ -59,9 +59,9 @@
 |----|-----------|
 | A11Y-001 | 100% das ações do popup executáveis só com teclado. |
 | A11Y-002 | Contraste mínimo **WCAG 2.1 AA** (4,5:1 texto, 3:1 componentes) nos dois temas — verificado por teste automatizado dos tokens de cor. |
-| A11Y-003 | Compatível com leitor de tela (Narrador): papéis ARIA (`listbox`/`option`), rótulos em botões só com ícone, anúncio do item focado. |
+| A11Y-003 | Compatível com leitor de tela (Narrador): papéis ARIA (`listbox`/`option`), rótulos em botões só com ícone, anúncio do item focado. Verificado por `axe-core` (sem violações) no popup, nas seis seções das configurações e nas boas-vindas; os atalhos de mouse dentro de cada item (fixar/excluir) ficam fora da árvore de acessibilidade porque Ctrl+P e Delete fazem o mesmo. |
 | A11Y-004 | Respeita "Mostrar animações" do Windows / `prefers-reduced-motion`. |
-| A11Y-005 | Respeita escala de texto do Windows e DPI até 300%; layout sem cortes. |
+| A11Y-005 | Respeita escala de texto do Windows e DPI até 300%; layout sem cortes. `[manual]` (checklist de release: 100%, 150%, 200% e 300%; os layouts usam `flex-wrap` e quebram para uma coluna em janelas estreitas). |
 | A11Y-006 | Suporte a temas de alto contraste (`forced-colors`). |
 
 ## Manutenibilidade (MNT)

@@ -21,6 +21,7 @@
 
 <div
   class="list"
+  id="snippet-list"
   role="listbox"
   aria-label={t('popup.filter.snippets')}
   aria-activedescendant={activeId}

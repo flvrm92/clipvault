@@ -246,7 +246,6 @@
       oninput={(e) => store.setSearch(e.currentTarget.value)}
       placeholder={t('popup.search.placeholder')}
       aria-label={t('popup.search.label')}
-      aria-controls="history-list"
       spellcheck="false"
       autocomplete="off"
     />
@@ -446,7 +445,7 @@
     margin: 4px 12px 8px;
     padding: 0 10px;
     height: 34px;
-    border: 1px solid var(--border);
+    border: 1px solid var(--border-strong);
     border-bottom: 2px solid var(--accent);
     border-radius: 6px;
     background: var(--surface-raised);
@@ -577,13 +576,13 @@
     align-items: center;
     padding: 8px 12px;
     border-radius: var(--radius);
-    background: var(--text-primary);
-    color: var(--surface);
+    background: var(--inverse-surface);
+    color: var(--inverse-text);
     font-size: 12px;
   }
 
   .toast button {
-    color: var(--brand-400);
+    color: var(--inverse-accent);
   }
 
   .toast.error {
