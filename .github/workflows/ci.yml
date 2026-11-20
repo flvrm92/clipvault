@@ -1,0 +1,101 @@
+# Continuous integration — specs/08-estrategia-de-testes.md §6
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  CARGO_TERM_COLOR: always
+  RUSTFLAGS: -D warnings
+
+jobs:
+  rust:
+    name: Rust · lint, test, architecture, traceability
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      # The app crate embeds ui/dist at compile time (tauri::generate_context!).
+      - run: pnpm --filter clipvault-ui build
+      - run: rustup show active-toolchain || rustup toolchain install
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo fmt --all --check
+      - run: cargo clippy --workspace --all-targets --locked
+      - run: cargo test --workspace --locked
+      # Win32 integration tests (`#[ignore]`, serial) are enabled from M3 on:
+      # - run: cargo test --workspace --locked -- --ignored
+      - run: cargo xtask check-arch
+      - run: cargo xtask trace-reqs
+
+  coverage:
+    name: Rust · coverage
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter clipvault-ui build
+      - run: rustup show active-toolchain || rustup toolchain install
+      - uses: Swatinem/rust-cache@v2
+      - uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-llvm-cov
+      # The composition root (app) is covered by E2E tests, not by line coverage (specs/08 §5).
+      - run: cargo llvm-cov --workspace --exclude clipvault-app --locked --fail-under-lines 85 --lcov --output-path lcov.info
+      - uses: actions/upload-artifact@v4
+        with:
+          name: rust-coverage
+          path: lcov.info
+
+  ui:
+    name: UI · lint, typecheck, test, coverage
+    runs-on: windows-latest
+    defaults:
+      run:
+        working-directory: ui
+    steps:
+      - uses: actions/checkout@v5
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm lint
+      - run: pnpm check
+      - run: pnpm coverage
+      - run: pnpm build
+
+  audit:
+    name: Supply chain audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: EmbarkStudios/cargo-deny-action@v2
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+      - run: pnpm audit --prod
+
+  # Added in later milestones (specs/10):
+  # - assets (M6): tools/gen-assets --check
+  # - e2e (M4+, nightly/release): tauri-driver + WebdriverIO against the packaged app

@@ -1,0 +1,7 @@
+# Requisitos cuja cobertura por testes automatizados é exigida pelo CI (`cargo xtask trace-reqs`).
+# Cresce a cada marco concluído (specs/10). Aceita IDs exatos ("CAP-004") ou áreas inteiras ("CAP-*").
+# Requisitos marcados `[manual]` nas specs são ignorados.
+enforced = [
+  # M0 — Fundações
+  "MNT-001",
+]

@@ -1,0 +1,12 @@
+{
+  "app": {
+    "name": "ClipVault",
+    "tagline": "Your clipboard history, safe and one shortcut away.",
+    "foundation": "Foundation build. Clipboard capture arrives in the next milestones."
+  },
+  "tray": {
+    "tooltip": "ClipVault",
+    "open": "Open ClipVault",
+    "quit": "Quit"
+  }
+}

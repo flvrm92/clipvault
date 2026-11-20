@@ -1,0 +1,83 @@
+/* Design tokens — specs/07-identidade-visual.md §2. Components must use semantic tokens only. */
+:root {
+  color-scheme: light dark;
+  --font-ui: 'Segoe UI Variable Text', 'Segoe UI', system-ui, sans-serif;
+  --font-mono: 'Cascadia Mono', Consolas, monospace;
+  --radius: 8px;
+  --ease: cubic-bezier(0.2, 0, 0, 1);
+
+  --brand-600: #4b3fd1;
+  --brand-500: #6157e8;
+  --brand-400: #8a82f2;
+  --vault-teal: #14b8a6;
+
+  --surface: #f7f7fa;
+  --surface-raised: #ffffff;
+  --surface-hover: #eeeef4;
+  --surface-selected: #ecebff;
+  --border: #e1e0ea;
+  --text-primary: #1b1a24;
+  --text-secondary: #5c5a6b;
+  --accent: #4b3fd1;
+  --accent-text: #ffffff;
+  --success: #0f8a7e;
+  --warning: #9a6700;
+  --danger: #c4314b;
+  --focus-ring: #4b3fd1;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    --surface: #1c1b22;
+    --surface-raised: #26252e;
+    --surface-hover: #302f3a;
+    --surface-selected: #2e2a5c;
+    --border: #3a3946;
+    --text-primary: #f2f1f7;
+    --text-secondary: #a9a7b8;
+    --accent: #8a82f2;
+    --accent-text: #14131f;
+    --success: #2dd4bf;
+    --warning: #f5c451;
+    --danger: #ff8a9b;
+    --focus-ring: #a9a3ff;
+  }
+}
+
+:root[data-theme='dark'] {
+  --surface: #1c1b22;
+  --surface-raised: #26252e;
+  --surface-hover: #302f3a;
+  --surface-selected: #2e2a5c;
+  --border: #3a3946;
+  --text-primary: #f2f1f7;
+  --text-secondary: #a9a7b8;
+  --accent: #8a82f2;
+  --accent-text: #14131f;
+  --success: #2dd4bf;
+  --warning: #f5c451;
+  --danger: #ff8a9b;
+  --focus-ring: #a9a3ff;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  height: 100%;
+  background: var(--surface);
+  color: var(--text-primary);
+  font-family: var(--font-ui);
+  font-size: 14px;
+  -webkit-font-smoothing: antialiased;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation: none !important;
+    transition: none !important;
+  }
+}

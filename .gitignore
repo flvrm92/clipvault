@@ -1,0 +1,9 @@
+/target/
+node_modules/
+/ui/dist/
+/ui/coverage/
+/app/gen/schemas/
+*.profraw
+lcov.info
+.DS_Store
+Thumbs.db

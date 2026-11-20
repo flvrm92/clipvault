@@ -1,0 +1,12 @@
+{
+  "app": {
+    "name": "ClipVault",
+    "tagline": "Seu histórico da área de transferência, seguro e a um atalho de distância.",
+    "foundation": "Versão de fundação. A captura da área de transferência chega nos próximos marcos."
+  },
+  "tray": {
+    "tooltip": "ClipVault",
+    "open": "Abrir o ClipVault",
+    "quit": "Sair"
+  }
+}
