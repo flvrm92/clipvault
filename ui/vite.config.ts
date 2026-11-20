@@ -16,7 +16,13 @@ export default defineConfig({
     coverage: {
       provider: 'v8',
       include: ['src/**/*.{ts,svelte}'],
-      exclude: ['src/**/*.{test,spec}.ts', 'src/test/**', 'src/main.ts', 'src/vite-env.d.ts'],
+      exclude: [
+        'src/**/*.{test,spec}.ts',
+        'src/test/**',
+        'src/main.ts',
+        'src/vite-env.d.ts',
+        'src/api/bindings/**', // generated types only
+      ],
       thresholds: { lines: 80, functions: 80, branches: 80, statements: 80 },
     },
   },
