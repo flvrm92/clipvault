@@ -136,8 +136,17 @@ impl Database {
         &self,
         operation: impl FnOnce(&mut Connection) -> rusqlite::Result<T>,
     ) -> Result<T, PortError> {
+        self.with_mapped(storage_error, operation)
+    }
+
+    /// Like [`Self::with`], mapping SQLite errors with `map_error`.
+    pub(crate) fn with_mapped<T>(
+        &self,
+        map_error: impl FnOnce(&rusqlite::Error) -> PortError,
+        operation: impl FnOnce(&mut Connection) -> rusqlite::Result<T>,
+    ) -> Result<T, PortError> {
         let mut conn = self.conn.lock().unwrap_or_else(PoisonError::into_inner);
-        operation(&mut conn).map_err(|e| storage_error(&e))
+        operation(&mut conn).map_err(|e| map_error(&e))
     }
 }
 

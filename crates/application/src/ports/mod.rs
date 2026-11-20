@@ -8,6 +8,7 @@ mod clock;
 mod events;
 mod focus;
 mod history;
+mod hotkeys;
 mod images;
 mod settings;
 
@@ -19,6 +20,7 @@ pub use clock::Clock;
 pub use events::{AppEvent, EventPublisher};
 pub use focus::{FocusTracker, KeystrokeSender, ScreenPoint, TargetWindow, WindowHandle};
 pub use history::{ClearScope, HistoryQuery, HistoryRepository, KindFilter, Page, Removal};
+pub use hotkeys::{Delay, HotkeyRegistrar, SnippetRepository, Suspension};
 pub use images::{ImageStore, StoredImage};
 pub use settings::SettingsRepository;
 
@@ -34,4 +36,7 @@ pub enum PortError {
     /// The requested entity does not exist.
     #[error("not found")]
     NotFound,
+    /// The resource is taken (a shortcut held by another app, a duplicate name).
+    #[error("already in use: {0}")]
+    InUse(String),
 }

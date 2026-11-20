@@ -11,4 +11,4 @@ pub mod placement;
 pub mod ports;
 pub mod use_cases;
 
-pub use error::AppError;
+pub use error::{AppError, HotkeyConflict};

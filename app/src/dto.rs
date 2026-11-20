@@ -3,10 +3,15 @@
 //! TypeScript definitions are generated into `ui/src/api/bindings/` by `cargo test`; CI fails
 //! when the committed bindings are out of date.
 
-use clipvault_application::AppError;
-use clipvault_application::ports::{ClearScope, HistoryQuery, KindFilter, Page, PortError};
-use clipvault_application::use_cases::{PasteMode, PasteOutcome};
+use clipvault_application::ports::{
+    ClearScope, HistoryQuery, KindFilter, Page, PortError, Suspension,
+};
+use clipvault_application::use_cases::{PasteMode, PasteOutcome, SnippetDraft};
+use clipvault_application::{AppError, HotkeyConflict};
 use clipvault_domain::clip::{ClipContent, ClipItem};
+use clipvault_domain::hotkey::HotkeyError;
+use clipvault_domain::ids::SnippetId;
+use clipvault_domain::snippet::{Snippet, SnippetError};
 use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 
@@ -220,6 +225,18 @@ pub enum ErrorCodeDto {
     NotFound,
     Unavailable,
     Storage,
+    /// Taken by another application (HK-004) or a duplicate.
+    InUse,
+    /// Snippet name already used (SNP-001).
+    NameTaken,
+    /// Shortcut used by the open-popup shortcut (HK-003).
+    HotkeyTakenByOpen,
+    /// Shortcut used by a snippet; `detail` is its name (HK-003).
+    HotkeyTakenBySnippet,
+    /// Invalid snippet field; `detail` says which rule (SNP-001).
+    InvalidSnippet,
+    /// Invalid shortcut; `detail` says which rule (HK-003).
+    InvalidHotkey,
 }
 
 /// Error returned by every command.
@@ -228,21 +245,140 @@ pub enum ErrorCodeDto {
 #[ts(export)]
 pub struct CommandError {
     pub code: ErrorCodeDto,
+    /// Extra data for the message: a snippet name or the violated rule.
+    pub detail: Option<String>,
     /// Diagnostic detail (English, never clipboard content).
     pub message: String,
 }
 
+fn snippet_rule(error: &SnippetError) -> &'static str {
+    match error {
+        SnippetError::NameBlank => "nameBlank",
+        SnippetError::NameTooLong { .. } => "nameTooLong",
+        SnippetError::BodyBlank => "bodyBlank",
+        SnippetError::BodyTooLarge { .. } => "bodyTooLarge",
+    }
+}
+
+fn hotkey_rule(error: &HotkeyError) -> &'static str {
+    match error {
+        HotkeyError::Empty => "empty",
+        HotkeyError::UnknownToken(_) => "unknownToken",
+        HotkeyError::DuplicateModifier => "duplicateModifier",
+        HotkeyError::MissingKey => "missingKey",
+        HotkeyError::MultipleKeys => "multipleKeys",
+        HotkeyError::MissingModifier => "missingModifier",
+        HotkeyError::Reserved => "reserved",
+    }
+}
+
 impl From<AppError> for CommandError {
     fn from(error: AppError) -> Self {
-        let AppError::Port(port) = &error;
-        let code = match port {
-            PortError::NotFound => ErrorCodeDto::NotFound,
-            PortError::Unavailable(_) => ErrorCodeDto::Unavailable,
-            PortError::Storage(_) => ErrorCodeDto::Storage,
+        let (code, detail) = match &error {
+            AppError::Port(PortError::NotFound) => (ErrorCodeDto::NotFound, None),
+            AppError::Port(PortError::Unavailable(_)) => (ErrorCodeDto::Unavailable, None),
+            AppError::Port(PortError::Storage(_)) => (ErrorCodeDto::Storage, None),
+            AppError::Port(PortError::InUse(_)) => (ErrorCodeDto::InUse, None),
+            AppError::NameTaken => (ErrorCodeDto::NameTaken, None),
+            AppError::HotkeyTaken(HotkeyConflict::OpenHistory) => {
+                (ErrorCodeDto::HotkeyTakenByOpen, None)
+            }
+            AppError::HotkeyTaken(HotkeyConflict::Snippet(name)) => {
+                (ErrorCodeDto::HotkeyTakenBySnippet, Some(name.clone()))
+            }
+            AppError::InvalidSnippet(rule) => (
+                ErrorCodeDto::InvalidSnippet,
+                Some(snippet_rule(rule).to_owned()),
+            ),
+            AppError::InvalidHotkey(rule) => (
+                ErrorCodeDto::InvalidHotkey,
+                Some(hotkey_rule(rule).to_owned()),
+            ),
         };
         Self {
             code,
+            detail,
             message: error.to_string(),
+        }
+    }
+}
+
+/// A snippet (SNP-001).
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, TS)]
+#[serde(rename_all = "camelCase")]
+#[ts(export)]
+pub struct SnippetDto {
+    #[ts(type = "number")]
+    pub id: i64,
+    pub name: String,
+    pub body: String,
+    /// Canonical shortcut text, e.g. `"Ctrl+Shift+1"`.
+    pub hotkey: Option<String>,
+    pub enabled: bool,
+}
+
+impl From<&Snippet> for SnippetDto {
+    fn from(snippet: &Snippet) -> Self {
+        Self {
+            id: snippet.id.get(),
+            name: snippet.name.as_str().to_owned(),
+            body: snippet.body.as_str().to_owned(),
+            hotkey: snippet.hotkey.map(|h| h.to_string()),
+            enabled: snippet.enabled,
+        }
+    }
+}
+
+/// A snippet as edited by the user; validated by the backend.
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, TS)]
+#[serde(rename_all = "camelCase")]
+#[ts(export)]
+pub struct SnippetDraftDto {
+    /// `null` creates a snippet.
+    #[ts(type = "number | null")]
+    pub id: Option<i64>,
+    pub name: String,
+    pub body: String,
+    pub hotkey: Option<String>,
+    pub enabled: bool,
+}
+
+impl From<SnippetDraftDto> for SnippetDraft {
+    fn from(dto: SnippetDraftDto) -> Self {
+        Self {
+            id: dto.id.map(SnippetId::new),
+            name: dto.name,
+            body: dto.body,
+            hotkey: dto.hotkey,
+            enabled: dto.enabled,
+        }
+    }
+}
+
+/// The "Atalhos" settings section (HK-001, SNP-005).
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, TS)]
+#[serde(rename_all = "camelCase")]
+#[ts(export)]
+pub struct ShortcutSettingsDto {
+    pub open_shortcut: String,
+    pub restore_clipboard: bool,
+    pub snippets: Vec<SnippetDto>,
+}
+
+/// Whether global shortcuts are active while one is being recorded (HK-002).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize, TS)]
+#[serde(rename_all = "camelCase")]
+#[ts(export)]
+pub enum SuspensionDto {
+    Active,
+    Suspended,
+}
+
+impl From<SuspensionDto> for Suspension {
+    fn from(dto: SuspensionDto) -> Self {
+        match dto {
+            SuspensionDto::Active => Self::Active,
+            SuspensionDto::Suspended => Self::Suspended,
         }
     }
 }
@@ -331,7 +467,38 @@ mod tests {
 
         assert_eq!(
             serde_json::to_value(error).unwrap(),
-            json!({"code": "notFound", "message": "not found"})
+            json!({"code": "notFound", "detail": null, "message": "not found"})
         );
+    }
+
+    #[test]
+    fn hk_003_conflicts_and_rules_are_detailed_for_the_ui() {
+        let by_snippet = CommandError::from(AppError::HotkeyTaken(HotkeyConflict::Snippet(
+            "Assinatura".into(),
+        )));
+        let reserved = CommandError::from(AppError::InvalidHotkey(HotkeyError::Reserved));
+        let blank = CommandError::from(AppError::InvalidSnippet(SnippetError::NameBlank));
+        let in_use = CommandError::from(AppError::Port(PortError::InUse("x".into())));
+
+        assert_eq!(
+            (by_snippet.code, by_snippet.detail.as_deref()),
+            (ErrorCodeDto::HotkeyTakenBySnippet, Some("Assinatura"))
+        );
+        assert_eq!(reserved.detail.as_deref(), Some("reserved"));
+        assert_eq!(blank.detail.as_deref(), Some("nameBlank"));
+        assert_eq!(in_use.code, ErrorCodeDto::InUse);
+    }
+
+    #[test]
+    fn snippet_drafts_deserialize_and_snippets_serialize() {
+        let draft: SnippetDraftDto = serde_json::from_value(json!({
+            "id": null, "name": "Teste", "body": "Teste de texto",
+            "hotkey": "Ctrl+Shift+V", "enabled": true
+        }))
+        .unwrap();
+
+        let draft = SnippetDraft::from(draft);
+        assert_eq!(draft.id, None);
+        assert_eq!(draft.hotkey.as_deref(), Some("Ctrl+Shift+V"));
     }
 }

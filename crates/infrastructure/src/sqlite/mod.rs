@@ -4,11 +4,13 @@ mod database;
 mod history;
 mod migrations;
 mod settings;
+mod snippets;
 
 pub use database::{Database, DatabaseError, Diagnostics, Opened};
 pub use history::SqliteHistoryRepository;
 pub use migrations::LATEST_SCHEMA_VERSION;
 pub use settings::{SqliteSettingsRepository, settings_from_entries, settings_to_entries};
+pub use snippets::SqliteSnippetRepository;
 
 use clipvault_application::ports::PortError;
 

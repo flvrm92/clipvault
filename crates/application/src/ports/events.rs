@@ -6,6 +6,8 @@ pub enum AppEvent {
     HistoryChanged,
     /// Capture was paused or resumed (CAP-008, TRAY-003).
     CaptureStateChanged,
+    /// Any setting changed (CFG-002).
+    SettingsChanged,
 }
 
 /// Publishes [`AppEvent`]s.

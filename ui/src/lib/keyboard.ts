@@ -12,7 +12,8 @@ export type KeyAction =
   | { type: 'preview' }
   | { type: 'filter'; direction: 1 | -1 }
   | { type: 'clearSearch' }
-  | { type: 'close' };
+  | { type: 'close' }
+  | { type: 'settings' };
 
 export interface KeyInput {
   key: string;
@@ -35,6 +36,7 @@ export function resolveKey(input: KeyInput, context: KeyContext): KeyAction | nu
   if (alt && /^[1-9]$/.test(key)) return { type: 'pasteNth', index: Number(key) - 1 };
   if (ctrl && key.toLowerCase() === 'c') return context.inputHasSelection ? null : { type: 'copy' };
   if (ctrl && key.toLowerCase() === 'p') return { type: 'togglePin' };
+  if (ctrl && key === ',') return { type: 'settings' };
   if (ctrl || alt) return null;
 
   switch (key) {

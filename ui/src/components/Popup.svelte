@@ -2,13 +2,16 @@
   import { onMount } from 'svelte';
   import { imageUrl, type ClipVaultApi } from '../api/client';
   import type { ClipItemDto } from '../api/bindings/ClipItemDto';
+  import type { KindFilterDto } from '../api/bindings/KindFilterDto';
   import type { PopupStateDto } from '../api/bindings/PopupStateDto';
+  import type { SnippetDto } from '../api/bindings/SnippetDto';
   import { t } from '../i18n';
   import { FILTERS, HistoryStore } from '../lib/history.svelte';
   import { resolveKey, type KeyAction } from '../lib/keyboard';
   import BrandMark from '../lib/BrandMark.svelte';
   import HistoryList from './HistoryList.svelte';
   import Icon from './Icon.svelte';
+  import SnippetList from './SnippetList.svelte';
 
   let { api }: { api: ClipVaultApi } = $props();
 
@@ -22,7 +25,49 @@
   let preview = $state<{ item: ClipItemDto; text: string } | null>(null);
   let failed = $state(false);
 
+  type Tab = KindFilterDto | 'snippets';
+  const TABS: Tab[] = [...FILTERS, 'snippets'];
+  let tab = $state<Tab>('all');
+  let snippets = $state<SnippetDto[]>([]);
+  let snippetSelected = $state(0);
+
   const query = $derived(store.search.trim());
+  const fold = (text: string) => text.normalize('NFD').replace(/\p{M}/gu, '').toLowerCase();
+  const visibleSnippets = $derived(
+    query ? snippets.filter((s) => fold(`${s.name} ${s.body}`).includes(fold(query))) : snippets,
+  );
+
+  async function selectTab(next: Tab) {
+    tab = next;
+    snippetSelected = 0;
+    if (next === 'snippets') snippets = await api.listSnippets();
+    else await store.setFilter(next);
+  }
+
+  function moveSnippet(index: number) {
+    snippetSelected = Math.min(Math.max(0, index), Math.max(0, visibleSnippets.length - 1));
+  }
+
+  const pasteSnippet = (snippet: SnippetDto | undefined) =>
+    snippet && guard(() => api.pasteSnippet(snippet.id));
+
+  /** Keyboard actions while the snippet tab is shown (SNP-007). */
+  function runOnSnippets(action: KeyAction) {
+    switch (action.type) {
+      case 'move':
+        return moveSnippet(snippetSelected + action.by);
+      case 'page':
+        return moveSnippet(snippetSelected + action.direction * viewportRows);
+      case 'edge':
+        return moveSnippet(action.edge === 'first' ? 0 : visibleSnippets.length - 1);
+      case 'paste':
+        return pasteSnippet(visibleSnippets[snippetSelected]);
+      case 'pasteNth':
+        return pasteSnippet(visibleSnippets[action.index]);
+      default:
+        return undefined;
+    }
+  }
 
   async function guard(action: () => Promise<unknown>) {
     try {
@@ -44,6 +89,7 @@
     menuOpen = false;
     confirmingClear = false;
     preview = null;
+    tab = 'all';
     await Promise.all([refreshState(), store.reset()]);
     search?.focus();
   }
@@ -69,6 +115,14 @@
 
   function run(action: KeyAction) {
     const item = store.selectedItem;
+    if (action.type === 'filter') {
+      const next = (TABS.indexOf(tab) + action.direction + TABS.length) % TABS.length;
+      return selectTab(TABS[next] ?? 'all');
+    }
+    if (action.type === 'settings') return api.openSettings();
+    if (tab === 'snippets' && !['clearSearch', 'close'].includes(action.type)) {
+      return runOnSnippets(action);
+    }
     switch (action.type) {
       case 'move':
         return store.move(action.by);
@@ -88,12 +142,12 @@
         return item && store.remove(item);
       case 'preview':
         return togglePreview(item);
-      case 'filter':
-        return store.cycleFilter(action.direction);
       case 'clearSearch':
         return store.setSearch('');
       case 'close':
         return preview ? (preview = null) : api.hidePopup();
+      default:
+        return undefined;
     }
   }
 
@@ -173,6 +227,9 @@
           <button type="button" role="menuitem" onclick={() => (confirmingClear = true)}>
             {t('popup.menu.clear')}
           </button>
+          <button type="button" role="menuitem" onclick={() => api.openSettings()}>
+            {t('popup.menu.settings')}
+          </button>
         </div>
       {/if}
     </span>
@@ -194,15 +251,15 @@
   </label>
 
   <div class="filters" role="tablist" aria-label={t('popup.filter.label')}>
-    {#each FILTERS as filter (filter)}
+    {#each TABS as option (option)}
       <button
         type="button"
         role="tab"
         tabindex="-1"
-        aria-selected={store.filter === filter}
-        onclick={() => store.setFilter(filter)}
+        aria-selected={tab === option}
+        onclick={() => selectTab(option)}
       >
-        {t(`popup.filter.${filter}`)}
+        {t(`popup.filter.${option}`)}
       </button>
     {/each}
   </div>
@@ -230,7 +287,20 @@
     </div>
   {/if}
 
-  {#if store.items.length > 0}
+  {#if tab === 'snippets'}
+    {#if visibleSnippets.length > 0}
+      <SnippetList
+        snippets={visibleSnippets}
+        selected={snippetSelected}
+        onactivate={(i) => pasteSnippet(visibleSnippets[i])}
+        onselect={(i) => (snippetSelected = i)}
+      />
+    {:else if query}
+      <p class="empty" role="status">{t('popup.snippets.noResults', { query })}</p>
+    {:else}
+      <p class="empty" role="status">{t('popup.snippets.empty')}</p>
+    {/if}
+  {:else if store.items.length > 0}
     <HistoryList
       items={store.items}
       selected={store.selected}

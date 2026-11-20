@@ -8,16 +8,18 @@ use std::time::Duration;
 
 use clipvault_application::ports::{
     AppEvent, ClearScope, ClipboardContent, ClipboardReader, ClipboardSequence, ClipboardSnapshot,
-    ClipboardWriter, Clock, EventPublisher, FocusTracker, HistoryQuery, HistoryRepository,
-    ImageStore, KeystrokeSender, KindFilter, Page, PortError, Removal, SettingsRepository,
-    StoredImage, TargetWindow, WindowHandle,
+    ClipboardWriter, Clock, Delay, EventPublisher, FocusTracker, HistoryQuery, HistoryRepository,
+    HotkeyRegistrar, ImageStore, KeystrokeSender, KindFilter, Page, PortError, Removal,
+    SettingsRepository, SnippetRepository, StoredImage, Suspension, TargetWindow, WindowHandle,
 };
 use clipvault_domain::clip::{ClipContent, ClipItem, NewClipItem, PinState};
 use clipvault_domain::hash::ContentHash;
-use clipvault_domain::ids::ClipId;
+use clipvault_domain::hotkey::{Hotkey, HotkeyOwner};
+use clipvault_domain::ids::{ClipId, SnippetId};
 use clipvault_domain::image::{FileKey, ImagePixels, thumbnail_size};
 use clipvault_domain::retention::RetentionCandidate;
 use clipvault_domain::settings::Settings;
+use clipvault_domain::snippet::{NewSnippet, Snippet, SnippetBody, SnippetName};
 use clipvault_domain::text::{ClipText, normalize_for_search};
 use clipvault_domain::time::Timestamp;
 
@@ -584,5 +586,211 @@ impl KeystrokeSender for RecordingKeystrokes {
         }
         state.pastes += 1;
         Ok(())
+    }
+}
+
+#[derive(Debug, Default)]
+struct SnippetState {
+    snippets: Vec<Snippet>,
+    last_id: i64,
+}
+
+/// Snippets kept in memory.
+#[derive(Debug, Default)]
+pub struct InMemorySnippetRepository {
+    state: Mutex<SnippetState>,
+}
+
+impl InMemorySnippetRepository {
+    /// Inserts a snippet with a generated body.
+    pub fn insert_for_tests(&self, name: &str, hotkey: Option<Hotkey>, enabled: bool) -> SnippetId {
+        let new = NewSnippet {
+            name: SnippetName::parse(name).unwrap(),
+            body: SnippetBody::new(&format!("corpo de {name}")).unwrap(),
+            hotkey,
+            enabled,
+        };
+        self.insert(new, Timestamp::from_millis(0)).unwrap().id
+    }
+
+    /// Inserts an enabled snippet without shortcut.
+    pub fn insert_body_for_tests(&self, name: &str, body: &str) -> SnippetId {
+        let new = NewSnippet {
+            name: SnippetName::parse(name).unwrap(),
+            body: SnippetBody::new(body).unwrap(),
+            hotkey: None,
+            enabled: true,
+        };
+        self.insert(new, Timestamp::from_millis(0)).unwrap().id
+    }
+
+    /// Enables or disables a snippet.
+    pub fn set_enabled_for_tests(&self, id: SnippetId, enabled: bool) {
+        if let Some(s) = lock(&self.state).snippets.iter_mut().find(|s| s.id == id) {
+            s.enabled = enabled;
+        }
+    }
+
+    fn check_unique(
+        state: &SnippetState,
+        id: Option<SnippetId>,
+        name: &SnippetName,
+        hotkey: Option<Hotkey>,
+    ) -> Result<(), PortError> {
+        let others = state.snippets.iter().filter(|s| Some(s.id) != id);
+        for other in others {
+            if other.name.is_same_as(name) {
+                return Err(PortError::InUse("snippet name".into()));
+            }
+            if hotkey.is_some() && other.hotkey == hotkey {
+                return Err(PortError::InUse("snippet shortcut".into()));
+            }
+        }
+        Ok(())
+    }
+}
+
+impl SnippetRepository for InMemorySnippetRepository {
+    fn list(&self) -> Result<Vec<Snippet>, PortError> {
+        let mut snippets = lock(&self.state).snippets.clone();
+        snippets.sort_by_key(|s| (s.order, s.id));
+        Ok(snippets)
+    }
+
+    fn get(&self, id: SnippetId) -> Result<Option<Snippet>, PortError> {
+        Ok(lock(&self.state)
+            .snippets
+            .iter()
+            .find(|s| s.id == id)
+            .cloned())
+    }
+
+    fn insert(&self, snippet: NewSnippet, _at: Timestamp) -> Result<Snippet, PortError> {
+        let mut state = lock(&self.state);
+        Self::check_unique(&state, None, &snippet.name, snippet.hotkey)?;
+        state.last_id += 1;
+        let order = state
+            .snippets
+            .iter()
+            .map(|s| s.order + 1)
+            .max()
+            .unwrap_or(0);
+        let saved = Snippet {
+            id: SnippetId::new(state.last_id),
+            name: snippet.name,
+            body: snippet.body,
+            hotkey: snippet.hotkey,
+            enabled: snippet.enabled,
+            order,
+        };
+        state.snippets.push(saved.clone());
+        Ok(saved)
+    }
+
+    fn update(&self, snippet: &Snippet, _at: Timestamp) -> Result<(), PortError> {
+        let mut state = lock(&self.state);
+        Self::check_unique(&state, Some(snippet.id), &snippet.name, snippet.hotkey)?;
+        let slot = state
+            .snippets
+            .iter_mut()
+            .find(|s| s.id == snippet.id)
+            .ok_or(PortError::NotFound)?;
+        *slot = snippet.clone();
+        Ok(())
+    }
+
+    fn delete(&self, id: SnippetId) -> Result<(), PortError> {
+        let mut state = lock(&self.state);
+        let index = state
+            .snippets
+            .iter()
+            .position(|s| s.id == id)
+            .ok_or(PortError::NotFound)?;
+        state.snippets.remove(index);
+        Ok(())
+    }
+}
+
+#[derive(Debug, Default)]
+struct RegistrarState {
+    registered: BTreeMap<String, (HotkeyOwner, Hotkey)>,
+    blocked: Vec<Hotkey>,
+    suspended: bool,
+}
+
+/// Global shortcuts kept in memory; combinations can be "taken by another app".
+#[derive(Debug, Default)]
+pub struct FakeHotkeyRegistrar {
+    state: Mutex<RegistrarState>,
+}
+
+fn owner_key(owner: HotkeyOwner) -> String {
+    format!("{owner:?}")
+}
+
+impl FakeHotkeyRegistrar {
+    /// Simulates another application holding `hotkey` (HK-004).
+    pub fn block(&self, hotkey: Hotkey) {
+        lock(&self.state).blocked.push(hotkey);
+    }
+
+    /// The hotkey registered for `owner`.
+    pub fn registered(&self, owner: HotkeyOwner) -> Option<Hotkey> {
+        lock(&self.state)
+            .registered
+            .get(&owner_key(owner))
+            .map(|(_, h)| *h)
+    }
+
+    /// Number of registered shortcuts.
+    pub fn count(&self) -> usize {
+        lock(&self.state).registered.len()
+    }
+
+    /// Whether shortcuts are suspended.
+    pub fn is_suspended(&self) -> bool {
+        lock(&self.state).suspended
+    }
+}
+
+impl HotkeyRegistrar for FakeHotkeyRegistrar {
+    fn register(&self, owner: HotkeyOwner, hotkey: Hotkey) -> Result<(), PortError> {
+        let mut state = lock(&self.state);
+        if state.blocked.contains(&hotkey) {
+            return Err(PortError::InUse(format!(
+                "{hotkey} is used by another application"
+            )));
+        }
+        state.registered.insert(owner_key(owner), (owner, hotkey));
+        Ok(())
+    }
+
+    fn unregister(&self, owner: HotkeyOwner) -> Result<(), PortError> {
+        lock(&self.state).registered.remove(&owner_key(owner));
+        Ok(())
+    }
+
+    fn set_suspension(&self, suspension: Suspension) -> Result<(), PortError> {
+        lock(&self.state).suspended = suspension == Suspension::Suspended;
+        Ok(())
+    }
+}
+
+/// Records requested waits instead of sleeping.
+#[derive(Debug, Default)]
+pub struct RecordingDelay {
+    waits: Mutex<Vec<Duration>>,
+}
+
+impl RecordingDelay {
+    /// Waits requested so far.
+    pub fn waits(&self) -> Vec<Duration> {
+        lock(&self.waits).clone()
+    }
+}
+
+impl Delay for RecordingDelay {
+    fn wait(&self, duration: Duration) {
+        lock(&self.waits).push(duration);
     }
 }

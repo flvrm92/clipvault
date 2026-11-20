@@ -138,6 +138,9 @@ Componentes de apoio em `application::capture`:
 | `system_clock` | `Clock` | `time`/`std` |
 
 > Os atalhos globais são implementados diretamente com `RegisterHotKey` (e não com `tauri-plugin-global-shortcut`) para ter controle de erro por atalho (HK-004) e testabilidade via porta. Ver ADR-0005.
+>
+> `win32::hotkeys::Win32HotkeyRegistrar` é um Active Object: uma thread com fila de mensagens própria registra os atalhos (eles ficam ligados à thread que os registrou) e recebe os `WM_HOTKEY`. As outras threads mandam comandos por canal e acordam a thread com `PostThreadMessageW`. A tradução `Hotkey` → (modificadores, tecla virtual) é pura e fica em `hotkey_codes`.
+> `KeystrokeSender` espera os modificadores serem soltos antes do `Ctrl+V` (SNP-004) e verifica também os códigos genéricos (`VK_SHIFT`, `VK_CONTROL`, `VK_MENU`), que é como outras ferramentas injetam teclas.
 
 ### 3.4 `app` (composition root)
 
@@ -151,6 +154,8 @@ Componentes de apoio em `application::capture`:
 
 - **Popup** (`popup.rs`): ao abrir, captura a janela alvo (`FocusTracker`) e posiciona a janela com a regra pura `application::placement` (HK-005): perto do caret, senão do ponteiro, sempre dentro da área de trabalho do monitor. Fecha ao perder o foco (PST-007).
 - **Colar** (`paste_item`): o comando é assíncrono. Ele esconde o popup e roda `PasteItem` fora da thread principal, para que o Windows processe o `hide` antes de o foco voltar à janela alvo.
+- **Janela de configurações** (`settings_window.rs`): criada sob demanda pelo comando **assíncrono** `open_settings`. No Windows, criar uma janela WebView2 dentro de um comando síncrono (thread principal, durante uma chamada IPC) deixa o conteúdo em branco. O mesmo bundle serve as duas janelas; a tela é escolhida pelo rótulo da janela.
+- **Atalhos** (`hotkeys.rs`): o callback do registrador só repassa o trabalho para outra thread. O atalho de abertura alterna o popup; o de um snippet roda `PasteSnippet` na janela em primeiro plano.
 - **Contrato com a UI:** os DTOs geram tipos TypeScript (`ts-rs`) em `ui/src/api/bindings/`. O CI falha se os arquivos versionados estiverem desatualizados.
 
 ### 3.5 `ui`

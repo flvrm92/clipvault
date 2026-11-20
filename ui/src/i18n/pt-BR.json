@@ -8,10 +8,12 @@
     "open": "Abrir histórico",
     "pause": "Pausar captura",
     "resume": "Retomar captura",
-    "quit": "Sair"
+    "quit": "Sair",
+    "settings": "Configurações"
   },
   "notification": {
-    "copiedOnly": "Conteúdo copiado. Cole com Ctrl+V."
+    "copiedOnly": "Conteúdo copiado. Cole com Ctrl+V.",
+    "shortcutsUnavailable": "Alguns atalhos estão em uso por outro aplicativo. Escolha outros nas Configurações."
   },
   "popup": {
     "title": "Histórico da área de transferência",
@@ -24,7 +26,8 @@
       "text": "Texto",
       "images": "Imagens",
       "pinned": "Fixados",
-      "label": "Filtro"
+      "label": "Filtro",
+      "snippets": "Fixos"
     },
     "list": {
       "label": "Histórico da área de transferência"
@@ -51,7 +54,8 @@
       "label": "Mais opções",
       "pause": "Pausar captura",
       "resume": "Retomar captura",
-      "clear": "Limpar histórico"
+      "clear": "Limpar histórico",
+      "settings": "Configurações"
     },
     "clear": {
       "confirm": "Remover todos os itens não fixados?",
@@ -72,6 +76,74 @@
     },
     "preview": {
       "close": "Fechar pré-visualização"
+    },
+    "snippets": {
+      "empty": "Nenhum conteúdo fixo. Crie nas Configurações.",
+      "noResults": "Nenhum conteúdo fixo para \"{query}\""
+    }
+  },
+  "settings": {
+    "title": "Configurações",
+    "nav": {
+      "label": "Seções",
+      "shortcuts": "Atalhos"
+    },
+    "shortcuts": {
+      "heading": "Atalhos",
+      "open": "Abrir o ClipVault",
+      "openHint": "Mostra o histórico da área de transferência em qualquer aplicativo.",
+      "snippets": "Conteúdos fixos",
+      "snippetsHint": "Textos colados com um atalho.",
+      "new": "Novo",
+      "none": "Nenhum conteúdo fixo ainda.",
+      "noShortcut": "Sem atalho",
+      "enabled": "Ativo",
+      "edit": "Editar",
+      "delete": "Excluir",
+      "confirmDelete": "Excluir \"{name}\"?",
+      "restore": "Restaurar a área de transferência após colar um conteúdo fixo"
+    },
+    "editor": {
+      "newTitle": "Novo conteúdo fixo",
+      "editTitle": "Editar conteúdo fixo",
+      "name": "Nome",
+      "body": "Conteúdo",
+      "shortcut": "Atalho",
+      "enabled": "Ativo",
+      "save": "Salvar",
+      "cancel": "Cancelar"
+    },
+    "recorder": {
+      "prompt": "Pressione as teclas…",
+      "empty": "Não definido",
+      "change": "Alterar",
+      "clear": "Remover atalho",
+      "hint": "Esc cancela · Backspace remove"
+    }
+  },
+  "errors": {
+    "generic": "Algo deu errado. Tente novamente.",
+    "notFound": "Este item não existe mais.",
+    "unavailable": "O Windows não permitiu a ação. Tente novamente.",
+    "storage": "Não foi possível salvar. Tente novamente.",
+    "inUse": "Este atalho está em uso por outro aplicativo.",
+    "nameTaken": "Já existe um conteúdo fixo com este nome.",
+    "hotkeyTakenByOpen": "Este atalho abre o ClipVault.",
+    "hotkeyTakenBySnippet": "Atalho já usado pelo conteúdo fixo \"{name}\".",
+    "hotkey": {
+      "empty": "Pressione um atalho.",
+      "unknownToken": "Esta tecla não é suportada.",
+      "duplicateModifier": "Um modificador está repetido.",
+      "missingKey": "Adicione uma tecla além de Ctrl, Alt, Shift ou Win.",
+      "multipleKeys": "Use uma única tecla além dos modificadores.",
+      "missingModifier": "Inclua Ctrl, Alt, Shift ou Win.",
+      "reserved": "Este atalho é reservado pelo Windows."
+    },
+    "snippet": {
+      "nameBlank": "Informe um nome.",
+      "nameTooLong": "Use no máximo 60 caracteres.",
+      "bodyBlank": "Informe o conteúdo.",
+      "bodyTooLarge": "O conteúdo é muito grande (máx. 100 KB)."
     }
   }
 }

@@ -6,18 +6,22 @@ use clipvault_application::ports::{KeystrokeSender, PortError};
 use windows::Win32::UI::Input::KeyboardAndMouse::{
     GetAsyncKeyState, INPUT, INPUT_0, INPUT_KEYBOARD, KEYBD_EVENT_FLAGS, KEYBDINPUT,
     KEYEVENTF_KEYUP, SendInput, VIRTUAL_KEY, VK_CONTROL, VK_LCONTROL, VK_LMENU, VK_LSHIFT, VK_LWIN,
-    VK_RCONTROL, VK_RMENU, VK_RSHIFT, VK_RWIN, VK_V,
+    VK_MENU, VK_RCONTROL, VK_RMENU, VK_RSHIFT, VK_RWIN, VK_SHIFT, VK_V,
 };
 
 /// How long to wait for the user to release modifiers before releasing them synthetically.
 const MODIFIER_RELEASE_TIMEOUT: Duration = Duration::from_secs(1);
 
-/// Modifiers that would change `Ctrl+V` into another shortcut if still held.
-const MODIFIERS: [VIRTUAL_KEY; 8] = [
+/// Modifiers that would change `Ctrl+V` into another shortcut if still held. The generic codes
+/// are checked too: input injected by other tools often uses them instead of the left/right ones.
+const MODIFIERS: [VIRTUAL_KEY; 11] = [
+    VK_SHIFT,
     VK_LSHIFT,
     VK_RSHIFT,
+    VK_CONTROL,
     VK_LCONTROL,
     VK_RCONTROL,
+    VK_MENU,
     VK_LMENU,
     VK_RMENU,
     VK_LWIN,

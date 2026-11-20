@@ -10,6 +10,7 @@
 pub mod history;
 pub mod images;
 pub mod settings;
+pub mod snippets;
 
 /// Expands to a `#[test]` per case of a contract module.
 #[doc(hidden)]

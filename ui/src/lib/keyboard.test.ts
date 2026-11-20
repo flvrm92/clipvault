@@ -72,6 +72,10 @@ describe('resolveKey (specs/06 §2.2)', () => {
     expect(resolveKey(key('Escape'), idle)).toEqual({ type: 'close' });
   });
 
+  it('[CFG-001] Ctrl+, opens the settings', () => {
+    expect(resolveKey(key(',', { ctrl: true }), typing)).toEqual({ type: 'settings' });
+  });
+
   it('leaves ordinary typing to the search box', () => {
     expect(resolveKey(key('a'), typing)).toBeNull();
     expect(resolveKey(key('Backspace'), typing)).toBeNull();

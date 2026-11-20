@@ -6,10 +6,13 @@ mod appearance;
 mod commands;
 mod container;
 mod dto;
+mod hotkeys;
 mod i18n;
 mod logging;
+mod notify;
 mod popup;
 mod protocol;
+mod settings_window;
 mod tray;
 
 use clipvault_application::ports::SettingsRepository;
@@ -60,6 +63,15 @@ pub fn run() -> tauri::Result<()> {
             commands::set_capture_state,
             commands::get_popup_state,
             commands::hide_popup,
+            commands::paste_snippet,
+            commands::list_snippets,
+            commands::get_shortcut_settings,
+            commands::save_snippet,
+            commands::delete_snippet,
+            commands::change_open_hotkey,
+            commands::set_hotkey_suspension,
+            commands::set_restore_clipboard,
+            commands::open_settings,
         ])
         .setup(|app| {
             let data_dir = app.path().app_local_data_dir()?;
@@ -74,9 +86,13 @@ pub fn run() -> tauri::Result<()> {
             if let Err(error) = container.start_capture() {
                 tracing::error!(%error, "clipboard capture could not start");
             }
+            let unavailable = container.start_hotkeys();
             app.manage(container);
 
             tray::create(app.handle())?;
+            if !unavailable.is_empty() {
+                notify::shortcuts_unavailable(app.handle());
+            }
             apply_appearance(app.handle());
             Ok(())
         })

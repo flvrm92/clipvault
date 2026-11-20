@@ -9,20 +9,23 @@ use std::time::Duration;
 use clipvault_application::capture::{CaptureWorker, Debouncer, OwnWriteRegistry, WorkerMessage};
 use clipvault_application::ports::{AppEvent, EventPublisher};
 use clipvault_application::use_cases::{
-    CaptureClipboard, CaptureDependencies, PasteDependencies, PurgeExpired, ReconcileImages,
-    RetentionDependencies,
+    ApplyHotkeyBindings, CaptureClipboard, CaptureDependencies, PasteDependencies,
+    PasteSnippetDependencies, PurgeExpired, ReconcileImages, RetentionDependencies,
+    SnippetDependencies,
 };
-use clipvault_infrastructure::clock::SystemClock;
+use clipvault_infrastructure::clock::{SystemClock, ThreadDelay};
 use clipvault_infrastructure::images::FsImageStore;
 use clipvault_infrastructure::sqlite::{
     Database, DatabaseError, SqliteHistoryRepository, SqliteSettingsRepository,
+    SqliteSnippetRepository,
 };
 use clipvault_infrastructure::win32::{
-    ClipboardListener, Win32Clipboard, Win32FocusTracker, Win32KeystrokeSender,
+    ClipboardListener, Win32Clipboard, Win32FocusTracker, Win32HotkeyRegistrar,
+    Win32KeystrokeSender,
 };
 use tauri::{AppHandle, Emitter, Wry};
 
-use crate::tray;
+use crate::{hotkeys, tray};
 
 /// Interval of the background retention purge (RET-004).
 const PURGE_INTERVAL: Duration = Duration::from_hours(1);
@@ -51,6 +54,7 @@ impl EventPublisher for TauriEvents {
                 tray::refresh(&self.app);
                 "capture://changed"
             }
+            AppEvent::SettingsChanged => "settings://changed",
         };
         if let Err(error) = self.app.emit(name, ()) {
             tracing::warn!(%error, name, "failed to emit event");
@@ -85,6 +89,8 @@ pub struct Container {
     pub clipboard: Arc<Win32Clipboard>,
     pub focus: Arc<Win32FocusTracker>,
     pub keys: Arc<Win32KeystrokeSender>,
+    pub snippets: Arc<SqliteSnippetRepository>,
+    pub registrar: Arc<Win32HotkeyRegistrar>,
     capture: Mutex<Option<CaptureService>>,
 }
 
@@ -92,6 +98,9 @@ impl Container {
     /// Opens storage under `data_dir` (`history.db` and `images/`, specs/03 §7).
     pub fn build(data_dir: &Path, app: AppHandle<Wry>) -> Result<Self, StartupError> {
         let opened = Database::open(&data_dir.join("history.db"))?;
+        let on_press_app = app.clone();
+        let registrar =
+            Win32HotkeyRegistrar::start(move |owner| hotkeys::on_press(&on_press_app, owner))?;
         // REL-005: the user notification is shown by the UI from M4 on.
         if let Some(backup) = &opened.recovered_from {
             tracing::error!(backup = %backup.display(), "corrupt database replaced");
@@ -99,7 +108,9 @@ impl Container {
         Ok(Self {
             history: Arc::new(SqliteHistoryRepository::new(opened.database.clone())),
             images: Arc::new(FsImageStore::open(data_dir.join("images"))?),
-            settings: Arc::new(SqliteSettingsRepository::new(opened.database)),
+            settings: Arc::new(SqliteSettingsRepository::new(opened.database.clone())),
+            snippets: Arc::new(SqliteSnippetRepository::new(opened.database)),
+            registrar: Arc::new(registrar),
             clock: Arc::new(SystemClock),
             events: Arc::new(TauriEvents { app }),
             own_writes: Arc::new(OwnWriteRegistry::default()),
@@ -108,6 +119,42 @@ impl Container {
             keys: Arc::new(Win32KeystrokeSender),
             capture: Mutex::new(None),
         })
+    }
+
+    /// Ports for snippets and shortcuts (SNP-*, HK-*).
+    pub fn snippet_dependencies(&self) -> SnippetDependencies {
+        SnippetDependencies {
+            snippets: self.snippets.clone(),
+            settings: self.settings.clone(),
+            registrar: self.registrar.clone(),
+            clock: self.clock.clone(),
+        }
+    }
+
+    /// Ports for pasting snippets (SNP-003..005, SNP-007).
+    pub fn paste_snippet_dependencies(&self) -> PasteSnippetDependencies {
+        PasteSnippetDependencies {
+            snippets: self.snippets.clone(),
+            reader: self.clipboard.clone(),
+            writer: self.clipboard.clone(),
+            focus: self.focus.clone(),
+            keys: self.keys.clone(),
+            own_writes: self.own_writes.clone(),
+            settings: self.settings.clone(),
+            delay: Arc::new(ThreadDelay),
+        }
+    }
+
+    /// Registers the open shortcut and the snippet shortcuts (HK-001, SNP-003); returns the
+    /// owners taken by other applications (HK-004).
+    pub fn start_hotkeys(&self) -> Vec<clipvault_domain::hotkey::HotkeyOwner> {
+        match ApplyHotkeyBindings::new(self.snippet_dependencies()).execute() {
+            Ok(failures) => failures,
+            Err(error) => {
+                tracing::error!(%error, "shortcuts could not be registered");
+                Vec::new()
+            }
+        }
     }
 
     /// Ports for pasting and copying items (PST-*, HIST-011).
@@ -163,6 +210,7 @@ impl Container {
 
     /// Stops the capture, finishing pending work (TRAY-005). Safe to call more than once.
     pub fn shutdown(&self) {
+        self.registrar.stop();
         let service = self
             .capture
             .lock()

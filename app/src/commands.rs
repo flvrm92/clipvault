@@ -6,24 +6,23 @@ use std::time::Duration;
 
 use clipvault_application::AppError;
 use clipvault_application::use_cases::{
-    CaptureState, ClearHistory, CopyItem, DeleteItem, GetItem, ListHistory, PasteItem,
-    PasteOutcome, SetCaptureState, TogglePin,
+    CaptureState, ChangeOpenHotkey, ClearHistory, CopyItem, DeleteItem, DeleteSnippet, GetItem,
+    ListHistory, ListSnippets, PasteItem, PasteOutcome, PasteSnippet, SaveSnippet, SetCaptureState,
+    SnippetTarget, SuspendHotkeys, TogglePin, UpdateSettings,
 };
 use clipvault_domain::clip::{ClipContent, PinState};
-use clipvault_domain::ids::ClipId;
+use clipvault_domain::ids::{ClipId, SnippetId};
 use serde::Deserialize;
 use tauri::{AppHandle, Manager, State, Wry};
-use tauri_plugin_notification::NotificationExt;
 use ts_rs::TS;
 
-use crate::appearance;
 use crate::container::Container;
 use crate::dto::{
     ClearScopeDto, CommandError, HistoryPageDto, HistoryQueryDto, PasteModeDto, PasteResultDto,
-    PopupStateDto,
+    PopupStateDto, ShortcutSettingsDto, SnippetDraftDto, SnippetDto, SuspensionDto,
 };
-use crate::i18n::Translator;
 use crate::popup::{self, PopupState};
+use crate::{appearance, notify, settings_window};
 
 type CommandResult<T> = Result<T, CommandError>;
 
@@ -74,29 +73,133 @@ pub async fn paste_item(
         PasteItem::new(deps).execute(ClipId::new(id), mode.into(), target.as_ref())
     })
     .await
-    .map_err(|error| {
-        CommandError::from(AppError::Port(
-            clipvault_application::ports::PortError::Unavailable(error.to_string()),
-        ))
-    })??;
+    .map_err(|e| blocking_failed(&e))??;
     if let PasteOutcome::CopiedOnly(reason) = outcome {
         tracing::info!(?reason, "item copied; user pastes manually");
-        notify_copied_only(&app);
+        notify::copied_only(&app);
     }
     Ok(outcome.into())
 }
 
-fn notify_copied_only(app: &AppHandle<Wry>) {
-    let body = app.state::<Translator>().t("notification.copiedOnly");
-    if let Err(error) = app
-        .notification()
-        .builder()
-        .title("ClipVault")
-        .body(body)
-        .show()
-    {
-        tracing::warn!(%error, "notification could not be shown");
+fn blocking_failed(error: &tauri::Error) -> CommandError {
+    CommandError::from(AppError::Port(
+        clipvault_application::ports::PortError::Unavailable(error.to_string()),
+    ))
+}
+
+/// SNP-007: pastes a snippet from the popup into the window that was active before it.
+#[tauri::command]
+pub async fn paste_snippet(app: AppHandle<Wry>, id: i64) -> CommandResult<PasteResultDto> {
+    popup::hide(&app);
+    let target = app.state::<PopupState>().take_target();
+    let deps = app.state::<Container>().paste_snippet_dependencies();
+    let outcome = tauri::async_runtime::spawn_blocking(move || {
+        std::thread::sleep(HIDE_SETTLE);
+        PasteSnippet::new(deps).execute(SnippetId::new(id), SnippetTarget::Window(target))
+    })
+    .await
+    .map_err(|e| blocking_failed(&e))??;
+    if let PasteOutcome::CopiedOnly(_) = outcome {
+        notify::copied_only(&app);
     }
+    Ok(outcome.into())
+}
+
+/// SNP-001/007: every snippet in display order.
+#[tauri::command]
+pub fn list_snippets(container: State<'_, Container>) -> CommandResult<Vec<SnippetDto>> {
+    let snippets = ListSnippets::new(container.snippets.clone()).execute()?;
+    Ok(snippets.iter().map(SnippetDto::from).collect())
+}
+
+/// HK-001, SNP-005: the "Atalhos" settings section.
+#[tauri::command]
+pub fn get_shortcut_settings(
+    container: State<'_, Container>,
+) -> CommandResult<ShortcutSettingsDto> {
+    use clipvault_application::ports::SettingsRepository;
+    let settings = container.settings.load().map_err(AppError::from)?;
+    let snippets = ListSnippets::new(container.snippets.clone()).execute()?;
+    Ok(ShortcutSettingsDto {
+        open_shortcut: settings.hotkeys.open.to_string(),
+        restore_clipboard: settings.snippets.restore_clipboard,
+        snippets: snippets.iter().map(SnippetDto::from).collect(),
+    })
+}
+
+/// SNP-001, SNP-006: creates or edits a snippet and registers its shortcut.
+#[tauri::command]
+pub fn save_snippet(
+    container: State<'_, Container>,
+    draft: SnippetDraftDto,
+) -> CommandResult<SnippetDto> {
+    let saved = SaveSnippet::new(container.snippet_dependencies()).execute(draft.into())?;
+    Ok(SnippetDto::from(&saved))
+}
+
+/// SNP-006: deletes a snippet and releases its shortcut.
+#[tauri::command]
+pub fn delete_snippet(container: State<'_, Container>, id: i64) -> CommandResult<()> {
+    DeleteSnippet::new(container.snippet_dependencies()).execute(SnippetId::new(id))?;
+    Ok(())
+}
+
+/// HK-001..004: changes the shortcut that opens the popup; returns it in canonical form.
+#[tauri::command]
+pub fn change_open_hotkey(
+    container: State<'_, Container>,
+    shortcut: String,
+) -> CommandResult<String> {
+    let hotkey = ChangeOpenHotkey::new(container.snippet_dependencies()).execute(&shortcut)?;
+    Ok(hotkey.to_string())
+}
+
+/// HK-002: releases global shortcuts while the user records a new one.
+#[tauri::command]
+pub fn set_hotkey_suspension(
+    container: State<'_, Container>,
+    suspension: SuspensionDto,
+) -> CommandResult<()> {
+    SuspendHotkeys::new(container.registrar.clone()).execute(suspension.into())?;
+    Ok(())
+}
+
+/// Whether a setting is turned on, as sent by the UI.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize, TS)]
+#[serde(rename_all = "camelCase")]
+#[ts(export)]
+pub enum ToggleDto {
+    On,
+    Off,
+}
+
+/// SNP-005: restore the previous clipboard content after pasting a snippet.
+#[tauri::command]
+pub fn set_restore_clipboard(
+    container: State<'_, Container>,
+    value: ToggleDto,
+) -> CommandResult<()> {
+    UpdateSettings::new(container.settings.clone(), container.events.clone())
+        .execute(|s| s.snippets.restore_clipboard = value == ToggleDto::On)?;
+    Ok(())
+}
+
+/// CFG-001: opens the settings window. Async on purpose: creating a WebView2 window from a
+/// synchronous command (main thread, inside an IPC call) leaves it blank on Windows.
+#[tauri::command]
+pub async fn open_settings(app: AppHandle<Wry>) {
+    open_settings_window(&app);
+}
+
+/// Opens the settings window with the current backdrop (tray, popup, command).
+pub fn open_settings_window(app: &AppHandle<Wry>) {
+    use clipvault_application::ports::SettingsRepository;
+    popup::hide(app);
+    let mode = app.state::<Container>().settings.load().map_or_else(
+        |_| clipvault_domain::settings::ThemeMode::default(),
+        |s| s.ui.theme,
+    );
+    settings_window::open(app, appearance::current(mode).backdrop);
 }
 
 /// HIST-011: copies an item without pasting and closes the popup.

@@ -118,4 +118,48 @@ describe('HistoryStore', () => {
 
     expect(store.items.map((i) => i.id)).toEqual([2, 3]);
   });
+
+  it('[HIST-002] there is nothing more to load after the last page', async () => {
+    const { api } = fakeApi(many(3));
+    const store = new HistoryStore(api);
+    await store.reset();
+    const calls = api.listHistory.mock.calls.length;
+
+    await store.loadMore();
+
+    expect(api.listHistory.mock.calls.length).toBe(calls);
+  });
+
+  it('[HIST-003] a slower, older response never overwrites a newer one', async () => {
+    const { api } = fakeApi([textItem(1, 'Café'), textItem(2, 'Chá')]);
+    const store = new HistoryStore(api);
+    let releaseOld: () => void = () => {};
+    api.listHistory.mockImplementationOnce(
+      (q) =>
+        new Promise((resolve) => {
+          releaseOld = () =>
+            resolve({ items: [textItem(9, `old ${q.search ?? ''}`)], hasMore: false });
+        }),
+    );
+
+    const older = store.reload();
+    store.search = 'chá';
+    await store.reload();
+    releaseOld();
+    await older;
+
+    expect(store.items.map((i) => i.id)).toEqual([2]);
+  });
+
+  it('undoing without a pending deletion and flushing twice are harmless', async () => {
+    const { api } = fakeApi(many(1));
+    const store = new HistoryStore(api);
+    await store.reset();
+
+    store.undo();
+    await store.flush();
+
+    expect(store.items).toHaveLength(1);
+    expect(api.deleteItem).not.toHaveBeenCalled();
+  });
 });

@@ -93,8 +93,10 @@ impl BitOr for Modifiers {
     }
 }
 
+/// Keys identified by name rather than by a character.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-enum Named {
+#[allow(missing_docs)] // variant names are the key names
+pub enum NamedKey {
     Space,
     Enter,
     Tab,
@@ -125,7 +127,7 @@ enum Named {
     Quote,
 }
 
-impl Named {
+impl NamedKey {
     /// Display name followed by accepted aliases (lowercase).
     const TABLE: [(Self, &'static str, &'static [&'static str]); 28] = [
         (Self::Space, "Space", &[]),
@@ -176,7 +178,22 @@ enum KeyCode {
     Function(u8),
     /// `0..=9`
     Numpad(u8),
-    Named(Named),
+    NamedKey(NamedKey),
+}
+
+/// What a [`Key`] is, for mapping to platform key codes.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum KeyKind {
+    /// `A`–`Z`.
+    Letter(char),
+    /// `0`–`9` on the main keyboard.
+    Digit(u8),
+    /// `F1`–`F24`.
+    Function(u8),
+    /// `0`–`9` on the numeric keypad.
+    Numpad(u8),
+    /// A named key.
+    Named(NamedKey),
 }
 
 /// A non-modifier key.
@@ -190,13 +207,26 @@ impl Key {
         let digits = (0..=9).map(KeyCode::Digit);
         let functions = (1..=24).map(KeyCode::Function);
         let numpad = (0..=9).map(KeyCode::Numpad);
-        let named = Named::TABLE.into_iter().map(|(n, ..)| KeyCode::Named(n));
+        let named = NamedKey::TABLE
+            .into_iter()
+            .map(|(n, ..)| KeyCode::NamedKey(n));
         letters
             .chain(digits)
             .chain(functions)
             .chain(numpad)
             .chain(named)
             .map(Self)
+    }
+
+    /// The key's kind.
+    pub fn kind(self) -> KeyKind {
+        match self.0 {
+            KeyCode::Letter(c) => KeyKind::Letter(char::from(c)),
+            KeyCode::Digit(d) => KeyKind::Digit(d),
+            KeyCode::Function(n) => KeyKind::Function(n),
+            KeyCode::Numpad(d) => KeyKind::Numpad(d),
+            KeyCode::NamedKey(n) => KeyKind::Named(n),
+        }
     }
 
     const fn letter(c: u8) -> Self {
@@ -216,7 +246,7 @@ impl fmt::Display for Key {
             KeyCode::Digit(d) => write!(f, "{d}"),
             KeyCode::Function(n) => write!(f, "F{n}"),
             KeyCode::Numpad(d) => write!(f, "Num{d}"),
-            KeyCode::Named(n) => f.write_str(n.name()),
+            KeyCode::NamedKey(n) => f.write_str(n.name()),
         }
     }
 }
@@ -246,13 +276,13 @@ impl FromStr for Key {
                 {
                     KeyCode::Numpad(d)
                 } else {
-                    let (named, ..) = Named::TABLE
+                    let (named, ..) = NamedKey::TABLE
                         .iter()
                         .find(|(_, name, aliases)| {
                             name.eq_ignore_ascii_case(&lower) || aliases.contains(&lower.as_str())
                         })
                         .ok_or_else(unknown)?;
-                    KeyCode::Named(*named)
+                    KeyCode::NamedKey(*named)
                 }
             }
         };
@@ -270,10 +300,10 @@ const RESERVED: [(Modifiers, Key); 9] = [
     (Modifiers::WIN, Key::letter(b'V')),
     (
         Modifiers(Modifiers::CTRL.0 | Modifiers::ALT.0),
-        Key(KeyCode::Named(Named::Delete)),
+        Key(KeyCode::NamedKey(NamedKey::Delete)),
     ),
     (Modifiers::ALT, Key(KeyCode::Function(4))),
-    (Modifiers::ALT, Key(KeyCode::Named(Named::Tab))),
+    (Modifiers::ALT, Key(KeyCode::NamedKey(NamedKey::Tab))),
 ];
 
 /// A valid, non-reserved global shortcut.

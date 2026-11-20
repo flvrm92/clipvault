@@ -5,6 +5,7 @@
 
 pub mod clock;
 pub mod dib;
+pub mod hotkey_codes;
 pub mod images;
 pub mod retry;
 pub mod sqlite;
