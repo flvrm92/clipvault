@@ -7,6 +7,7 @@
 
 mod clipboard;
 mod focus;
+mod hotkeys;
 mod input;
 mod listener;
 mod owner;
@@ -16,6 +17,7 @@ mod window;
 
 pub use clipboard::Win32Clipboard;
 pub use focus::Win32FocusTracker;
+pub use hotkeys::Win32HotkeyRegistrar;
 pub use input::Win32KeystrokeSender;
 pub use listener::ClipboardListener;
 pub use theme::{SystemAppearance, system_appearance};

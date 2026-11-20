@@ -1,7 +1,7 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/svelte';
 import { describe, expect, it } from 'vitest';
 import { t } from '../i18n';
-import { fakeApi, imageItem, textItem } from '../test/fakeApi';
+import { fakeApi, imageItem, snippet, textItem } from '../test/fakeApi';
 import Popup from './Popup.svelte';
 
 const three = () => [textItem(1, 'primeiro'), textItem(2, '  segundo  '), textItem(3, 'terceiro')];
@@ -187,5 +187,57 @@ describe('Popup', () => {
 
     await waitFor(() => expect(document.documentElement.dataset.theme).toBe('dark'));
     expect(document.documentElement.dataset.backdrop).toBe('acrylic');
+  });
+
+  it('[SNP-007] the snippets tab lists snippets; Enter pastes the selected one', async () => {
+    const fake = fakeApi(three(), {}, [
+      snippet(7, 'Assinatura', { hotkey: 'Ctrl+Shift+1' }),
+      snippet(8, 'Endereço'),
+    ]);
+    render(Popup, { api: fake.api });
+    await screen.findAllByRole('option');
+
+    await fireEvent.click(screen.getByRole('tab', { name: t('popup.filter.snippets') }));
+    expect(await screen.findByText('Assinatura')).toBeInTheDocument();
+    await press('ArrowDown');
+    await press('Enter');
+
+    expect(fake.api.pasteSnippet).toHaveBeenCalledWith(8);
+    expect(fake.api.pasteItem).not.toHaveBeenCalled();
+  });
+
+  it('[SNP-007] the search filters snippets by name and content, ignoring accents', async () => {
+    const fake = fakeApi(three(), {}, [snippet(7, 'Assinatura'), snippet(8, 'Endereço')]);
+    render(Popup, { api: fake.api });
+    await screen.findAllByRole('option');
+    await fireEvent.click(screen.getByRole('tab', { name: t('popup.filter.snippets') }));
+    await screen.findByText('Assinatura');
+
+    await fireEvent.input(screen.getByRole('textbox'), { target: { value: 'endereco' } });
+
+    await waitFor(() => expect(screen.queryByText('Assinatura')).not.toBeInTheDocument());
+    expect(screen.getByText('Endereço')).toBeInTheDocument();
+  });
+
+  it('[HIST-004] Tab cycles through every tab, including snippets', async () => {
+    const { api } = await open();
+
+    for (let i = 0; i < 4; i++) await press('Tab');
+
+    await waitFor(() =>
+      expect(screen.getByRole('tab', { name: t('popup.filter.snippets') })).toHaveAttribute(
+        'aria-selected',
+        'true',
+      ),
+    );
+    expect(api.listSnippets).toHaveBeenCalled();
+  });
+
+  it('[CFG-001] Ctrl+, opens the settings window', async () => {
+    const { api } = await open();
+
+    await press(',', { ctrlKey: true });
+
+    expect(api.openSettings).toHaveBeenCalled();
   });
 });

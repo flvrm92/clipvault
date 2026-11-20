@@ -288,6 +288,8 @@ Como o atalho é disparado com modificadores ainda pressionados (ex.: `Shift`), 
 ### SNP-005 · Restaurar clipboard — S
 Após colar um snippet, o conteúdo anterior do clipboard é restaurado (após 500 ms, configurável). Configuração "Restaurar área de transferência após colar snippet" — padrão **ligado**.
 
+> **Limites:** só texto e imagem são restaurados. Formatação (rich text), arquivos e conteúdo marcado como privado (CAP-007) não são lidos e por isso não voltam. Quando a colagem cai no fallback "copiado" (PST-005/006), nada é restaurado, para o usuário poder colar o snippet manualmente.
+
 ### SNP-006 · Validação de atalho — M
 Mesmas regras de HK-003/HK-004. Edição/exclusão de snippet desregistra/registra atalhos imediatamente.
 

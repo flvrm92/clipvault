@@ -28,6 +28,16 @@ describe('tauriApi', () => {
     await tauriApi.setCaptureState('paused');
     await tauriApi.getPopupState();
     await tauriApi.hidePopup();
+    await tauriApi.pasteSnippet(6);
+    await tauriApi.listSnippets();
+    await tauriApi.getShortcutSettings();
+    const draft = { id: null, name: 'n', body: 'b', hotkey: null, enabled: true };
+    await tauriApi.saveSnippet(draft);
+    await tauriApi.deleteSnippet(7);
+    await tauriApi.changeOpenHotkey('Alt+V');
+    await tauriApi.setHotkeySuspension('suspended');
+    await tauriApi.setRestoreClipboard('off');
+    await tauriApi.openSettings();
 
     expect(invoke.mock.calls).toEqual([
       ['list_history', { query }],
@@ -40,6 +50,15 @@ describe('tauriApi', () => {
       ['set_capture_state', { state: 'paused' }],
       ['get_popup_state'],
       ['hide_popup'],
+      ['paste_snippet', { id: 6 }],
+      ['list_snippets'],
+      ['get_shortcut_settings'],
+      ['save_snippet', { draft }],
+      ['delete_snippet', { id: 7 }],
+      ['change_open_hotkey', { shortcut: 'Alt+V' }],
+      ['set_hotkey_suspension', { suspension: 'suspended' }],
+      ['set_restore_clipboard', { value: 'off' }],
+      ['open_settings'],
     ]);
   });
 

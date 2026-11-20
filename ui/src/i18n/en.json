@@ -8,10 +8,12 @@
     "open": "Open history",
     "pause": "Pause capture",
     "resume": "Resume capture",
-    "quit": "Quit"
+    "quit": "Quit",
+    "settings": "Settings"
   },
   "notification": {
-    "copiedOnly": "Copied. Paste with Ctrl+V."
+    "copiedOnly": "Copied. Paste with Ctrl+V.",
+    "shortcutsUnavailable": "Some shortcuts are used by another app. Choose others in Settings."
   },
   "popup": {
     "title": "Clipboard history",
@@ -24,7 +26,8 @@
       "text": "Text",
       "images": "Images",
       "pinned": "Pinned",
-      "label": "Filter"
+      "label": "Filter",
+      "snippets": "Snippets"
     },
     "list": {
       "label": "Clipboard history"
@@ -51,7 +54,8 @@
       "label": "More options",
       "pause": "Pause capture",
       "resume": "Resume capture",
-      "clear": "Clear history"
+      "clear": "Clear history",
+      "settings": "Settings"
     },
     "clear": {
       "confirm": "Remove all unpinned items?",
@@ -72,6 +76,74 @@
     },
     "preview": {
       "close": "Close preview"
+    },
+    "snippets": {
+      "empty": "No snippets. Create them in Settings.",
+      "noResults": "No snippets match \"{query}\""
+    }
+  },
+  "settings": {
+    "title": "Settings",
+    "nav": {
+      "label": "Sections",
+      "shortcuts": "Shortcuts"
+    },
+    "shortcuts": {
+      "heading": "Shortcuts",
+      "open": "Open ClipVault",
+      "openHint": "Shows the clipboard history from any app.",
+      "snippets": "Snippets",
+      "snippetsHint": "Texts pasted with a shortcut.",
+      "new": "New",
+      "none": "No snippets yet.",
+      "noShortcut": "No shortcut",
+      "enabled": "Enabled",
+      "edit": "Edit",
+      "delete": "Delete",
+      "confirmDelete": "Delete \"{name}\"?",
+      "restore": "Restore the clipboard after pasting a snippet"
+    },
+    "editor": {
+      "newTitle": "New snippet",
+      "editTitle": "Edit snippet",
+      "name": "Name",
+      "body": "Content",
+      "shortcut": "Shortcut",
+      "enabled": "Enabled",
+      "save": "Save",
+      "cancel": "Cancel"
+    },
+    "recorder": {
+      "prompt": "Press the keys…",
+      "empty": "Not set",
+      "change": "Change",
+      "clear": "Remove shortcut",
+      "hint": "Esc cancels · Backspace removes"
+    }
+  },
+  "errors": {
+    "generic": "Something went wrong. Please try again.",
+    "notFound": "This item no longer exists.",
+    "unavailable": "Windows did not allow the action. Please try again.",
+    "storage": "Could not save. Please try again.",
+    "inUse": "This shortcut is used by another app.",
+    "nameTaken": "Another snippet already has this name.",
+    "hotkeyTakenByOpen": "This shortcut opens ClipVault.",
+    "hotkeyTakenBySnippet": "Shortcut already used by the snippet \"{name}\".",
+    "hotkey": {
+      "empty": "Press a shortcut.",
+      "unknownToken": "This key is not supported.",
+      "duplicateModifier": "A modifier is repeated.",
+      "missingKey": "Add a key besides Ctrl, Alt, Shift or Win.",
+      "multipleKeys": "Use a single key besides the modifiers.",
+      "missingModifier": "Include Ctrl, Alt, Shift or Win.",
+      "reserved": "This shortcut is reserved by Windows."
+    },
+    "snippet": {
+      "nameBlank": "Enter a name.",
+      "nameTooLong": "Use at most 60 characters.",
+      "bodyBlank": "Enter the content.",
+      "bodyTooLarge": "The content is too long (max. 100 KB)."
     }
   }
 }

@@ -6,6 +6,10 @@ import type { ErrorCodeDto } from "./ErrorCodeDto";
  */
 export type CommandError = { code: ErrorCodeDto, 
 /**
+ * Extra data for the message: a snippet name or the violated rule.
+ */
+detail: string | null, 
+/**
  * Diagnostic detail (English, never clipboard content).
  */
 message: string, };

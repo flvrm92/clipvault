@@ -290,3 +290,17 @@ fn cap_008_capture_state_is_read_from_settings() {
     settings.update(|s| s.capture.paused = true);
     assert_eq!(use_case.current().unwrap(), CaptureState::Paused);
 }
+
+#[test]
+fn cfg_002_settings_changes_are_saved_immediately_and_notified() {
+    use clipvault_application::use_cases::UpdateSettings;
+    let settings = Arc::new(FixedSettings::default());
+    let events = Arc::new(RecordingEvents::default());
+
+    UpdateSettings::new(settings.clone(), events.clone())
+        .execute(|s| s.snippets.restore_clipboard = false)
+        .unwrap();
+
+    assert!(!settings.load().unwrap().snippets.restore_clipboard);
+    assert_eq!(events.recorded(), vec![AppEvent::SettingsChanged]);
+}

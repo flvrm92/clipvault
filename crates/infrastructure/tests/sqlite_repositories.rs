@@ -27,6 +27,15 @@ mod history_contract {
     clipvault_test_support::history_repository_contract!(history());
 }
 
+mod snippets_contract {
+    use super::*;
+    clipvault_test_support::snippet_repository_contract!(
+        clipvault_infrastructure::sqlite::SqliteSnippetRepository::new(
+            Database::open_in_memory().unwrap()
+        )
+    );
+}
+
 mod settings_contract {
     use super::*;
     clipvault_test_support::settings_repository_contract!(settings());

@@ -27,4 +27,8 @@ enforced = [
   "THM-001", "THM-002", "THM-003",
   "TRAY-002", "TRAY-003",
   "A11Y-001", "I18N-003", "SEC-003",
+  # M5 — Atalhos e snippets
+  "HK-001", "HK-002", "HK-004",
+  "SNP-002", "SNP-003", "SNP-004", "SNP-005", "SNP-006", "SNP-007",
+  "CFG-001", "CFG-002",
 ]

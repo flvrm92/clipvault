@@ -23,17 +23,19 @@ const ICON_PAUSED_DARK: &[u8] = include_bytes!("../icons/tray/tray-paused-dark.p
 pub enum MenuAction {
     Open,
     TogglePause,
+    Settings,
     Quit,
 }
 
 impl MenuAction {
-    const ALL: [Self; 3] = [Self::Open, Self::TogglePause, Self::Quit];
+    const ALL: [Self; 4] = [Self::Open, Self::TogglePause, Self::Settings, Self::Quit];
 
     /// Stable menu item identifier.
     pub fn id(self) -> &'static str {
         match self {
             Self::Open => "open",
             Self::TogglePause => "toggle-pause",
+            Self::Settings => "settings",
             Self::Quit => "quit",
         }
     }
@@ -106,10 +108,17 @@ pub fn create(app: &AppHandle<Wry>) -> tauri::Result<()> {
     };
     let open = item(MenuAction::Open, "tray.open")?;
     let pause = item(MenuAction::TogglePause, "tray.pause")?;
+    let settings = item(MenuAction::Settings, "tray.settings")?;
     let quit = item(MenuAction::Quit, "tray.quit")?;
     let menu = Menu::with_items(
         app,
-        &[&open, &pause, &PredefinedMenuItem::separator(app)?, &quit],
+        &[
+            &open,
+            &pause,
+            &settings,
+            &PredefinedMenuItem::separator(app)?,
+            &quit,
+        ],
     )?;
     app.manage(TrayMenu { pause });
 
@@ -120,6 +129,13 @@ pub fn create(app: &AppHandle<Wry>) -> tauri::Result<()> {
             |app, event| match MenuAction::from_id(event.id().as_ref()) {
                 Some(MenuAction::Open) => popup::show(app),
                 Some(MenuAction::TogglePause) => toggle_pause(app),
+                Some(MenuAction::Settings) => {
+                    // Created off the event thread, like the async `open_settings` command.
+                    let app = app.clone();
+                    tauri::async_runtime::spawn(async move {
+                        crate::commands::open_settings_window(&app);
+                    });
+                }
                 Some(MenuAction::Quit) => app.exit(0),
                 None => {}
             },
@@ -201,6 +217,8 @@ mod tests {
                 "tray.pause",
                 "tray.resume",
                 "tray.quit",
+                "tray.settings",
+                "notification.shortcutsUnavailable",
                 "tray.tooltip",
                 "tray.tooltipPaused",
                 "notification.copiedOnly",

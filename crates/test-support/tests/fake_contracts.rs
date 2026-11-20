@@ -17,3 +17,9 @@ mod settings {
         clipvault_test_support::FixedSettings::default()
     );
 }
+
+mod snippets {
+    clipvault_test_support::snippet_repository_contract!(
+        clipvault_test_support::InMemorySnippetRepository::default()
+    );
+}

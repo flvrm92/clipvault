@@ -153,3 +153,15 @@ proptest! {
         prop_assert_eq!(Hotkey::parse(&text.to_uppercase()), Ok(hotkey));
     }
 }
+
+#[test]
+fn keys_expose_their_kind_for_platform_mapping() {
+    assert_eq!(hk("Ctrl+A").key().kind(), KeyKind::Letter('A'));
+    assert_eq!(hk("Ctrl+7").key().kind(), KeyKind::Digit(7));
+    assert_eq!(hk("F13").key().kind(), KeyKind::Function(13));
+    assert_eq!(hk("Ctrl+Num4").key().kind(), KeyKind::Numpad(4));
+    assert_eq!(
+        hk("Ctrl+PageUp").key().kind(),
+        KeyKind::Named(NamedKey::PageUp)
+    );
+}
