@@ -75,7 +75,7 @@ Gravadas como pares chave/JSON; lidas e convertidas para o agregado `Settings`, 
 |-------|------|--------|
 | `capture.paused` | bool | `false` |
 | `capture.max_text_bytes` | int | `1048576` |
-| `capture.max_image_bytes` | int | `26214400` |
+| `capture.max_image_bytes` | int | `67108864` |
 | `capture.excluded_apps` | string[] | `[]` |
 | `retention.max_age_days` | int \| null | `30` |
 | `retention.max_items` | int \| null | `1000` |
@@ -116,10 +116,11 @@ excedentes = restantes[max_items..]   (se max_items ≠ ∅)
 remover = expirados ∪ excedentes
 ```
 
-Na prática o repositório executa equivalentes em SQL (`DELETE … WHERE pinned = 0 AND last_used_at < ?` e `… NOT IN (SELECT id … ORDER BY last_used_at DESC LIMIT ?)`), e **os dois caminhos são testados contra os mesmos casos** (a função pura é o oráculo do teste de integração).
+O caso de uso lê a visão de retenção (`retention_candidates`: id, `last_used_at`, fixado) e aplica a **função pura do domínio**. Depois remove os ids selecionados com `delete_many`, em lotes dentro de uma transação, e apaga os arquivos das imagens removidas. Assim a regra existe num só lugar, sem SQL equivalente para manter sincronizado. Para 5.000 itens, ler a visão custa menos de 1 ms.
 
 ## 6. Migrações
 
-- Diretório `crates/infrastructure/src/sqlite/migrations/NNN_descricao.sql`.
+- Diretório `crates/infrastructure/src/sqlite/migrations/NNN_descricao.sql`, embutido no binário (`include_str!`) e aplicado pelo executor próprio (ADR-0003).
+- Banco criado por uma versão mais nova do app (`user_version` maior que o suportado): a abertura falha com `NewerSchema` e o arquivo não é tocado.
 - Teste de migração: cria banco na versão N (fixture), aplica até a última, valida esquema e dados.
 - Nunca editar uma migração publicada.

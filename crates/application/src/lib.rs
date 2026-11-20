@@ -4,3 +4,10 @@
 //! See `specs/03-arquitetura.md` §3.2 and ADR-0002.
 #![forbid(unsafe_code)]
 #![warn(missing_docs)]
+
+pub mod capture;
+mod error;
+pub mod ports;
+pub mod use_cases;
+
+pub use error::AppError;

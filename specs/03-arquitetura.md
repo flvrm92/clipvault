@@ -70,7 +70,9 @@ Tipos puros, imutáveis quando possível, com construtores validados ("parse, do
 | `Hotkey` | Value object: `modifiers: Modifiers` (bitflags) + `key: Key`; `parse("Ctrl+Shift+1")`, `Display` canônico, `is_reserved()` |
 | `RetentionPolicy` | `max_age: Option<Duration>`, `max_items: Option<NonZeroU32>`; `select_expired(items, now) -> Vec<ClipId>` (função pura) |
 | `Settings` | Agregado de configurações com padrões (`Default`) |
-| `CaptureDecision` | `enum { Store(ClipContent), Promote(ClipId), Ignore(IgnoreReason) }` |
+| `CaptureDecision` | `enum { Store(NewClip), Promote(ClipId), Ignore(IgnoreReason) }`. `NewClip` carrega o conteúdo capturado (`CapturedContent::{Text(ClipText), Image(ImagePixels)}`) com hash e origem; a imagem ainda não foi gravada em disco |
+| `ImagePixels` | Imagem decodificada em RGBA 8 bits (validada: `len == w × h × 4`), como lida do clipboard |
+| `Timestamp` | Instante UTC em milissegundos Unix (formato do banco) |
 | `DomainError` | Erros de validação tipados |
 
 ### 3.2 `application`
@@ -79,8 +81,8 @@ Tipos puros, imutáveis quando possível, com construtores validados ("parse, do
 
 | Porta | Responsabilidade |
 |-------|------------------|
-| `ClipboardReader` | Ler o snapshot atual (`ClipboardSnapshot`: formatos presentes, texto, imagem bruta, flags de privacidade, dono) |
-| `ClipboardWriter` | Escrever texto/imagem; devolve o `sequence_number` resultante (para CAP-010) |
+| `ClipboardReader` | Ler o snapshot atual (`ClipboardSnapshot`: texto, imagem decodificada, flags de privacidade, dono, número de sequência). Conteúdo privado nem é lido; a imagem só é decodificada se não houver texto utilizável |
+| `ClipboardWriter` | Escrever `ClipboardContent` (texto ou imagem, esta como `PNG` + `CF_DIB`); devolve o número de sequência resultante (para CAP-010) |
 | `HistoryRepository` | CRUD/consulta de `ClipItem`, busca, paginação, `find_by_hash` |
 | `SnippetRepository` | CRUD de `Snippet` |
 | `SettingsRepository` | Ler/gravar `Settings` |
@@ -108,7 +110,7 @@ Tipos puros, imutáveis quando possível, com construtores validados ("parse, do
 | `ChangeOpenHotkey` | HK-001..004 |
 | `ApplyHotkeyBindings` | sincroniza todos os atalhos com o sistema na inicialização/alteração |
 
-**Pipeline de captura** — `CaptureClipboard` aplica uma cadeia de filtros (ver padrão *Chain of Responsibility* em [04](04-padroes-de-projeto.md)):
+**Pipeline de captura** — `CaptureClipboard::execute(snapshot)` recebe o `ClipboardSnapshot` já lido pelo worker (a leitura com retentativas, REL-003, fica no adaptador) e aplica uma cadeia de filtros (ver padrão *Chain of Responsibility* em [04](04-padroes-de-projeto.md)):
 
 ```
 snapshot → PausedFilter → OwnWriteFilter → PrivacyFlagsFilter → ExcludedAppFilter
@@ -116,13 +118,19 @@ snapshot → PausedFilter → OwnWriteFilter → PrivacyFlagsFilter → Excluded
          → Deduplicator (hash) → CaptureDecision
 ```
 
+Componentes de apoio em `application::capture`:
+- `OwnWriteRegistry`: números de sequência das escritas do próprio app (CAP-010), compartilhado entre os casos de uso que escrevem no clipboard e o `OwnWriteFilter`.
+- `Debouncer`: lógica pura do debounce de 100 ms (CAP-012), dirigida por timestamps. O listener Win32 (M3) só agenda o timer.
+
 ### 3.3 `infrastructure`
 
 | Módulo | Implementa | Tecnologia |
 |--------|-----------|------------|
 | `sqlite` | `HistoryRepository`, `SnippetRepository`, `SettingsRepository` | `rusqlite` (feature `bundled`), `rusqlite_migration` |
 | `fs_images` | `ImageStore` | `image` (PNG encode/decode, resize para miniatura) |
-| `win32::clipboard` | `ClipboardReader`, `ClipboardWriter`, listener | `windows` crate: `AddClipboardFormatListener` em janela *message-only*, `WM_CLIPBOARDUPDATE`, `GetClipboardSequenceNumber` |
+| `win32::clipboard` | `ClipboardReader`, `ClipboardWriter` | `windows` crate: `OpenClipboard` com retentativas (`retry`, REL-003), formatos `CF_UNICODETEXT`, `PNG`, `CF_DIBV5`/`CF_DIB` (codec puro em `dib`), `GetClipboardSequenceNumber` |
+| `win32::listener` | Fonte de `WorkerMessage::ClipboardChanged` | `AddClipboardFormatListener` numa janela *message-only* em thread própria (Active Object) |
+| `win32::owner` | Dono do clipboard (CAP-009/011) | `GetClipboardOwner` → PID → `QueryFullProcessImageNameW`. Limitação: apps que copiam via OLE com flush (ex.: .NET/PowerShell) não expõem dono; o item é capturado com origem desconhecida |
 | `win32::input` | `KeystrokeSender` | `SendInput`, `GetAsyncKeyState` |
 | `win32::focus` | `FocusTracker` | `GetForegroundWindow`, `SetForegroundWindow` (+ `AllowSetForegroundWindow`/`AttachThreadInput` quando necessário), `GetGUIThreadInfo` |
 | `win32::hotkeys` | `HotkeyRegistrar` | `RegisterHotKey`/`UnregisterHotKey` em thread dedicada com loop de mensagens |
@@ -155,10 +163,10 @@ snapshot → PausedFilter → OwnWriteFilter → PrivacyFlagsFilter → Excluded
 | Main (Tauri/UI) | Event loop, janelas, tray |
 | `clipboard-listener` | Janela message-only, recebe `WM_CLIPBOARDUPDATE`, aplica debounce (CAP-012) e envia `ClipboardChanged` por canal |
 | `hotkeys` | Loop de mensagens com `RegisterHotKey`; recebe comandos (registrar/remover) por canal e emite `HotkeyPressed(id)` |
-| `capture-worker` | Consome eventos, executa `CaptureClipboard` (inclui encode PNG); publica `HistoryChanged` |
+| `capture-worker` | `application::capture::CaptureWorker`: consome eventos, aplica o `Debouncer`, lê o clipboard e executa `CaptureClipboard` (inclui encode PNG); ao encerrar, conclui uma captura pendente (TRAY-005) |
 | `maintenance` | Timer horário de `PurgeExpired` |
 
-Comunicação por canais (`crossbeam-channel` ou `std::sync::mpsc`). O acesso ao SQLite usa uma conexão por thread com WAL (ou pool `r2d2_sqlite` pequeno).
+Comunicação por canais (`crossbeam-channel` ou `std::sync::mpsc`). O SQLite é acessado por **uma única conexão protegida por mutex** e compartilhada pelos repositórios (ADR-0003). Trocar por um pool só com contenção medida.
 
 ## 5. Fluxos principais
 
