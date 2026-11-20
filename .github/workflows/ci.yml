@@ -105,6 +105,9 @@ jobs:
       - uses: actions/setup-node@v5
         with:
           node-version: 24
+          # Nothing is installed here, so there is no pnpm store to cache; v5 caches by default
+          # when package.json declares `packageManager`, and fails saving a missing path.
+          package-manager-cache: false
       - run: pnpm audit --prod
 
   # Added in later milestones (specs/10):
