@@ -144,6 +144,27 @@ Tamanho padrão **380 × 520 px** (redimensionável, tamanho lembrado). Sem barr
 - Enquanto grava, o backend **suspende temporariamente os atalhos globais do app** para que a combinação chegue ao campo.
 - Exibe teclas como keycaps: `[Ctrl] [Win] [V]`.
 
+### Boas-vindas (TRAY-006)
+
+**440 × 360 px**, mesma janela (`welcome`), sem redimensionar, centralizada. Aparece só na primeira execução.
+
+```
+┌─ Bem-vindo ao ClipVault ─────────────────────┐
+│  ◈                                           │
+│  Bem-vindo ao ClipVault                      │
+│  Tudo o que você copiar fica guardado aqui.  │
+│                                              │
+│  Abra o histórico com  [Ctrl] [Win] [V]      │
+│                                              │
+│  ☑ Iniciar com o Windows                     │
+│                                              │
+│        [Abrir configurações]  [Começar]      │
+└──────────────────────────────────────────────┘
+```
+
+- Foco inicial em "Começar"; `Enter` confirma, `Esc` fecha sem confirmar (TRAY-006).
+- Se o início automático estiver bloqueado (CFG-003), a caixa aparece desabilitada com a explicação.
+
 ## 4. Tray
 
 - Tooltip: "ClipVault — 128 itens" / "ClipVault — captura pausada".

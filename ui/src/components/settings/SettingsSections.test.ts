@@ -73,6 +73,40 @@ describe('Settings window', () => {
 });
 
 describe('Settings — General', () => {
+  it('[CFG-003] start with Windows can be turned on', async () => {
+    const { api } = await open('general');
+    const toggle = await screen.findByRole('checkbox', {
+      name: t('settings.general.startupToggle'),
+    });
+    await waitFor(() => expect(toggle).toBeEnabled());
+
+    await fireEvent.click(toggle);
+
+    expect(api.setStartup).toHaveBeenCalledWith('on');
+    await waitFor(() => expect(toggle).toBeChecked());
+  });
+
+  it('[CFG-003] a startup locked by policy is disabled with an explanation', async () => {
+    await open('general', (fake) => fake.setStartup('enabledByPolicy'));
+
+    const toggle = screen.getByRole('checkbox', { name: t('settings.general.startupToggle') });
+    await waitFor(() => expect(toggle).toBeDisabled());
+    expect(toggle).toBeChecked();
+    expect(screen.getByText(t('settings.general.startupLocked.byPolicy'))).toBeInTheDocument();
+  });
+
+  it('[CFG-003] a failure is reported and the real state is shown again', async () => {
+    const { api } = await open('general');
+    api.setStartup.mockRejectedValueOnce({ code: 'unavailable', detail: null, message: '' });
+    const toggle = screen.getByRole('checkbox', { name: t('settings.general.startupToggle') });
+    await waitFor(() => expect(toggle).toBeEnabled());
+
+    await fireEvent.click(toggle);
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(t('errors.unavailable'));
+    await waitFor(() => expect(toggle).not.toBeChecked());
+  });
+
   it('[I18N-002] changing the language re-renders the window in that language', async () => {
     const { api } = await open('general');
 

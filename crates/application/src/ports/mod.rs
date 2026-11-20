@@ -12,6 +12,7 @@ mod history;
 mod hotkeys;
 mod images;
 mod settings;
+mod startup;
 
 pub use apps::RunningApps;
 pub use clipboard::{
@@ -25,6 +26,7 @@ pub use history::{ClearScope, HistoryQuery, HistoryRepository, KindFilter, Page,
 pub use hotkeys::{Delay, HotkeyRegistrar, SnippetRepository, Suspension};
 pub use images::{ImageStore, StoredImage};
 pub use settings::SettingsRepository;
+pub use startup::{StartupManager, StartupState};
 
 /// Failure of a port, without leaking adapter details.
 #[derive(Debug, Clone, PartialEq, Eq, thiserror::Error)]

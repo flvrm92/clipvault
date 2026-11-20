@@ -16,6 +16,7 @@ mod protocol;
 mod settings_commands;
 mod settings_window;
 mod tray;
+mod welcome_window;
 
 use clipvault_application::ports::SettingsRepository;
 use tauri::{Manager, RunEvent, WindowEvent};
@@ -23,6 +24,30 @@ use tauri::{Manager, RunEvent, WindowEvent};
 use crate::container::Container;
 use crate::i18n::Translator;
 use crate::popup::{POPUP, PopupState};
+
+fn on_window_event(window: &tauri::Window, event: &WindowEvent) {
+    match event {
+        // PST-007: the popup closes when it loses focus; closing hides it (TRAY-001).
+        WindowEvent::Focused(false) if window.label() == POPUP => {
+            popup::hide(window.app_handle());
+        }
+        WindowEvent::CloseRequested { api, .. } if window.label() == POPUP => {
+            api.prevent_close();
+            popup::hide(window.app_handle());
+        }
+        // TRAY-006: closing the welcome window without a choice is no consent.
+        WindowEvent::Destroyed if window.label() == welcome_window::WELCOME => {
+            settings_commands::dismiss_welcome(window.app_handle());
+        }
+        // THM-001/003: follow theme changes without restarting.
+        WindowEvent::ThemeChanged(_) => {
+            let app = window.app_handle();
+            preferences::apply_appearance(app, &preferences::settings(app));
+            tray::refresh(app);
+        }
+        _ => {}
+    }
+}
 
 /// Builds and runs the Tauri application until the user quits from the tray.
 ///
@@ -76,6 +101,10 @@ pub fn run() -> tauri::Result<()> {
             settings_commands::get_about,
             settings_commands::open_about_link,
             settings_commands::open_data_folder,
+            settings_commands::get_startup,
+            settings_commands::set_startup,
+            settings_commands::get_welcome,
+            settings_commands::complete_welcome,
         ])
         .setup(|app| {
             let data_dir = app.path().app_local_data_dir()?;
@@ -104,25 +133,10 @@ pub fn run() -> tauri::Result<()> {
                 notify::shortcuts_unavailable(app.handle());
             }
             preferences::apply_appearance(app.handle(), &settings);
+            settings_commands::show_welcome_if_pending(app.handle());
             Ok(())
         })
-        .on_window_event(|window, event| match event {
-            // PST-007: the popup closes when it loses focus; closing hides it (TRAY-001).
-            WindowEvent::Focused(false) if window.label() == POPUP => {
-                popup::hide(window.app_handle());
-            }
-            WindowEvent::CloseRequested { api, .. } if window.label() == POPUP => {
-                api.prevent_close();
-                popup::hide(window.app_handle());
-            }
-            // THM-001/003: follow theme changes without restarting.
-            WindowEvent::ThemeChanged(_) => {
-                let app = window.app_handle();
-                preferences::apply_appearance(app, &preferences::settings(app));
-                tray::refresh(app);
-            }
-            _ => {}
-        })
+        .on_window_event(on_window_event)
         .build(tauri::generate_context!())?;
 
     app.run(|handle, event| {

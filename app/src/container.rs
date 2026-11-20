@@ -7,7 +7,7 @@ use std::thread::JoinHandle;
 use std::time::Duration;
 
 use clipvault_application::capture::{CaptureWorker, Debouncer, OwnWriteRegistry, WorkerMessage};
-use clipvault_application::ports::{AppEvent, EventPublisher};
+use clipvault_application::ports::{AppEvent, EventPublisher, StartupManager};
 use clipvault_application::use_cases::{
     ApplyHotkeyBindings, CaptureClipboard, CaptureDependencies, ClearOnExit, PasteDependencies,
     PasteSnippetDependencies, PurgeExpired, ReconcileImages, RetentionDependencies,
@@ -21,7 +21,7 @@ use clipvault_infrastructure::sqlite::{
 };
 use clipvault_infrastructure::win32::{
     ClipboardListener, Win32Clipboard, Win32FocusTracker, Win32HotkeyRegistrar,
-    Win32KeystrokeSender, Win32RunningApps,
+    Win32KeystrokeSender, Win32RunningApps, startup_manager,
 };
 use tauri::{AppHandle, Emitter, Wry};
 
@@ -95,6 +95,7 @@ pub struct Container {
     pub snippets: Arc<SqliteSnippetRepository>,
     pub registrar: Arc<Win32HotkeyRegistrar>,
     pub running_apps: Arc<Win32RunningApps>,
+    pub startup: Arc<dyn StartupManager>,
     capture: Mutex<Option<CaptureService>>,
 }
 
@@ -116,6 +117,7 @@ impl Container {
             snippets: Arc::new(SqliteSnippetRepository::new(opened.database)),
             registrar: Arc::new(registrar),
             running_apps: Arc::new(Win32RunningApps),
+            startup: startup_manager(),
             clock: Arc::new(SystemClock),
             events: Arc::new(TauriEvents { app }),
             own_writes: Arc::new(OwnWriteRegistry::default()),

@@ -4,7 +4,8 @@
   "description": "Minimal permissions for the popup and settings windows (specs/02 SEC-002).",
   "windows": [
     "popup",
-    "settings"
+    "settings",
+    "welcome"
   ],
   "permissions": [
     "core:default"

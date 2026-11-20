@@ -4,7 +4,7 @@
 //! when the committed bindings are out of date.
 
 use clipvault_application::ports::{
-    ClearScope, HistoryQuery, KindFilter, Page, PortError, Suspension,
+    ClearScope, HistoryQuery, KindFilter, Page, PortError, StartupState, Suspension,
 };
 use clipvault_application::use_cases::{PasteMode, PasteOutcome, SnippetDraft};
 use clipvault_application::{AppError, HotkeyConflict};
@@ -628,6 +628,41 @@ impl AboutLinkDto {
     }
 }
 
+/// Start-with-Windows state (CFG-003).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, TS)]
+#[serde(rename_all = "camelCase")]
+#[ts(export)]
+pub enum StartupStateDto {
+    Enabled,
+    Disabled,
+    DisabledByUser,
+    DisabledByPolicy,
+    EnabledByPolicy,
+}
+
+impl From<StartupState> for StartupStateDto {
+    fn from(state: StartupState) -> Self {
+        match state {
+            StartupState::Enabled => Self::Enabled,
+            StartupState::Disabled => Self::Disabled,
+            StartupState::DisabledByUser => Self::DisabledByUser,
+            StartupState::DisabledByPolicy => Self::DisabledByPolicy,
+            StartupState::EnabledByPolicy => Self::EnabledByPolicy,
+        }
+    }
+}
+
+/// What the welcome window shows (TRAY-006).
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, TS)]
+#[serde(rename_all = "camelCase")]
+#[ts(export)]
+pub struct WelcomeDto {
+    pub open_shortcut: String,
+    pub startup: StartupStateDto,
+    pub appearance: AppearanceDto,
+    pub locale: String,
+}
+
 #[cfg(test)]
 mod tests {
     use clipvault_domain::app_name::AppName;
@@ -794,6 +829,23 @@ mod tests {
         }
         let link: AboutLinkDto = serde_json::from_value(json!("support")).unwrap();
         assert_eq!(link, AboutLinkDto::Support);
+    }
+
+    #[test]
+    fn cfg_003_startup_states_serialize_in_camel_case() {
+        let states = [
+            (StartupState::Enabled, "enabled"),
+            (StartupState::Disabled, "disabled"),
+            (StartupState::DisabledByUser, "disabledByUser"),
+            (StartupState::DisabledByPolicy, "disabledByPolicy"),
+            (StartupState::EnabledByPolicy, "enabledByPolicy"),
+        ];
+        for (state, name) in states {
+            assert_eq!(
+                serde_json::to_value(StartupStateDto::from(state)).unwrap(),
+                name
+            );
+        }
     }
 
     #[test]

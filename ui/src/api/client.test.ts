@@ -54,6 +54,10 @@ describe('tauriApi', () => {
     await tauriApi.getAbout();
     await tauriApi.openAboutLink('support');
     await tauriApi.openDataFolder();
+    await tauriApi.getStartup();
+    await tauriApi.setStartup('on');
+    await tauriApi.getWelcome();
+    await tauriApi.completeWelcome(true, false);
 
     expect(invoke.mock.calls).toEqual([
       ['list_history', { query }],
@@ -90,6 +94,10 @@ describe('tauriApi', () => {
       ['get_about'],
       ['open_about_link', { link: 'support' }],
       ['open_data_folder'],
+      ['get_startup'],
+      ['set_startup', { value: 'on' }],
+      ['get_welcome'],
+      ['complete_welcome', { startWithWindows: true, openSettings: false }],
     ]);
   });
 

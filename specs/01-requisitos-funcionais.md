@@ -60,7 +60,18 @@ Uma segunda execução não cria outra instância; ela sinaliza a instância exi
 "Sair" desregistra todos os atalhos globais, remove o listener de clipboard, conclui gravações pendentes e encerra o processo.
 
 ### TRAY-006 · Primeira execução — S
-Na primeira execução, exibe uma janela de boas-vindas curta (1 tela) com o atalho de abertura atual, link para configurações e a opção "Iniciar com o Windows".
+Na primeira execução, exibe uma janela de boas-vindas curta (1 tela) com o atalho de abertura atual, link para configurações e a opção "Iniciar com o Windows" (marcada por padrão).
+- "Começar" aplica a escolha de início automático (CFG-003) e fecha a janela; "Abrir configurações" faz o mesmo e abre as configurações.
+- Fechar a janela de outro modo conta como "não confirmado": o início automático continua desligado.
+- Em qualquer caso a primeira execução fica registrada (`general.first_run_done`) e a janela não volta a aparecer.
+
+```gherkin
+Cenário: Boas-vindas com início automático
+  Dado que o ClipVault é executado pela primeira vez
+  Quando o usuário mantém "Iniciar com o Windows" marcado e clica em "Começar"
+  Então o início automático é habilitado
+  E a janela de boas-vindas não aparece na próxima execução
+```
 
 ---
 
@@ -341,7 +352,15 @@ Janela própria, com seções: **Geral · Histórico · Atalhos · Privacidade �
 Alterações são salvas e aplicadas imediatamente (sem botão "Salvar"), exceto edição de snippet, que tem Salvar/Cancelar.
 
 ### CFG-003 · Iniciar com o Windows — M
-Opção "Iniciar com o Windows" — implementada via `StartupTask` do MSIX (ver [09](09-distribuicao-msix.md)). Padrão: ligado após confirmação na primeira execução. Se o usuário desabilitou nas Configurações do Windows, a opção fica desabilitada com explicação.
+Opção "Iniciar com o Windows" em Configurações → Geral — implementada via `StartupTask` do MSIX (ver [09](09-distribuicao-msix.md)); sem identidade de pacote (desenvolvimento, builds não empacotadas), via chave `Run` do usuário ([ADR-0008](../docs/adr/0008-inicio-com-windows.md)). Padrão: ligado após confirmação na primeira execução (TRAY-006).
+
+| Estado | Opção | Explicação exibida |
+|--------|-------|--------------------|
+| Habilitado / Desabilitado | alternável | — |
+| Desabilitado pelo usuário (Configurações do Windows ou Gerenciador de Tarefas) | desabilitada, desmarcada | "Desativado nas configurações de inicialização do Windows. Reative por lá." |
+| Desabilitado / habilitado por política | desabilitada | "Definido pela política da sua organização." |
+
+O app nunca reativa sozinho um início automático desligado pelo usuário: pedir para habilitar nesses estados não muda nada e devolve o estado atual.
 
 ### CFG-004 · Restaurar padrões — S
 Botão "Restaurar padrões" por seção (não afeta histórico nem snippets). Cada botão volta ao padrão de [05 §3](05-modelo-de-dados.md) só as configurações da própria seção:

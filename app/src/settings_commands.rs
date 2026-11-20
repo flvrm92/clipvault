@@ -5,8 +5,8 @@
 use clipvault_application::AppError;
 use clipvault_application::ports::SettingsRepository;
 use clipvault_application::use_cases::{
-    ChangeRetention, ChangeSizeLimit, ExcludeApp, IncludeApp, ListExclusionCandidates,
-    RestoreDefaults, SizeLimit, UpdateSettings,
+    ChangeRetention, ChangeSizeLimit, CompleteWelcome, ExcludeApp, GetStartup, IncludeApp,
+    ListExclusionCandidates, RestoreDefaults, SetStartup, SizeLimit, UpdateSettings, WelcomeChoice,
 };
 use clipvault_domain::retention::RetentionPolicy;
 use tauri::{AppHandle, Manager, State, Wry};
@@ -16,9 +16,10 @@ use crate::commands::ToggleDto;
 use crate::container::Container;
 use crate::dto::{
     AboutDto, AboutLinkDto, CommandError, LanguageDto, RetentionDto, SettingsDto,
-    SettingsSectionDto, SizeLimitDto, ThemeModeDto,
+    SettingsSectionDto, SizeLimitDto, StartupStateDto, ThemeModeDto, WelcomeDto,
 };
-use crate::preferences;
+use crate::settings_window::Page;
+use crate::{appearance, preferences, welcome_window};
 
 type CommandResult<T> = Result<T, CommandError>;
 
@@ -180,4 +181,100 @@ pub fn open_data_folder(app: AppHandle<Wry>) {
     if let Err(error) = opened {
         tracing::warn!(%error, "data folder could not be opened");
     }
+}
+
+/// Runs a start-with-Windows call off the main thread: the `WinRT` `StartupTask` blocks
+/// (ADR-0008).
+async fn blocking<T: Send + 'static>(
+    work: impl FnOnce() -> Result<T, AppError> + Send + 'static,
+) -> CommandResult<T> {
+    tauri::async_runtime::spawn_blocking(work)
+        .await
+        .map_err(|e| {
+            CommandError::from(AppError::Port(
+                clipvault_application::ports::PortError::Unavailable(e.to_string()),
+            ))
+        })?
+        .map_err(CommandError::from)
+}
+
+/// CFG-003: whether ClipVault starts with Windows.
+#[tauri::command]
+pub async fn get_startup(app: AppHandle<Wry>) -> CommandResult<StartupStateDto> {
+    let manager = app.state::<Container>().startup.clone();
+    let state = blocking(move || GetStartup::new(manager).execute()).await?;
+    Ok(state.into())
+}
+
+/// CFG-003: turns starting with Windows on or off; locked states are returned unchanged.
+#[tauri::command]
+pub async fn set_startup(app: AppHandle<Wry>, value: ToggleDto) -> CommandResult<StartupStateDto> {
+    let manager = app.state::<Container>().startup.clone();
+    let state = blocking(move || SetStartup::new(manager).execute(value == ToggleDto::On)).await?;
+    Ok(state.into())
+}
+
+/// TRAY-006: what the welcome window shows.
+#[tauri::command]
+pub async fn get_welcome(app: AppHandle<Wry>) -> CommandResult<WelcomeDto> {
+    let container = app.state::<Container>();
+    let settings = container.settings.load().map_err(AppError::from)?;
+    let manager = container.startup.clone();
+    let startup = blocking(move || GetStartup::new(manager).execute()).await?;
+    Ok(WelcomeDto {
+        open_shortcut: settings.hotkeys.open.to_string(),
+        startup: startup.into(),
+        appearance: appearance::current(settings.ui),
+        locale: preferences::locale(&settings).tag().to_owned(),
+    })
+}
+
+fn welcome(app: &AppHandle<Wry>) -> CompleteWelcome {
+    let container = app.state::<Container>();
+    CompleteWelcome::new(
+        container.settings.clone(),
+        container.events.clone(),
+        container.startup.clone(),
+    )
+}
+
+/// TRAY-006: "Começar" / "Abrir configurações"; `null` closes without consent.
+#[tauri::command]
+pub async fn complete_welcome(
+    app: AppHandle<Wry>,
+    start_with_windows: Option<bool>,
+    open_settings: bool,
+) -> CommandResult<StartupStateDto> {
+    let choice = start_with_windows.map_or(WelcomeChoice::Dismissed, |start_with_windows| {
+        WelcomeChoice::Confirmed { start_with_windows }
+    });
+    let use_case = welcome(&app);
+    let state = blocking(move || use_case.execute(choice)).await;
+    welcome_window::close(&app);
+    if open_settings {
+        crate::commands::open_settings_window(&app, Page::General);
+    }
+    Ok(state?.into())
+}
+
+/// TRAY-006: shows the welcome window on the first run.
+pub fn show_welcome_if_pending(app: &AppHandle<Wry>) {
+    match welcome(app).is_pending() {
+        Ok(true) => welcome_window::open(app),
+        Ok(false) => {}
+        Err(error) => tracing::warn!(%error, "first run state could not be read"),
+    }
+}
+
+/// TRAY-006: the welcome window was closed without a choice.
+pub fn dismiss_welcome(app: &AppHandle<Wry>) {
+    let use_case = welcome(app);
+    if !use_case.is_pending().unwrap_or(false) {
+        return;
+    }
+    tauri::async_runtime::spawn_blocking(move || {
+        if let Err(error) = use_case.execute(WelcomeChoice::Dismissed) {
+            tracing::warn!(%error, "first run could not be recorded");
+        }
+    });
 }

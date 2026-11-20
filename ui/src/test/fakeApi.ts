@@ -8,6 +8,7 @@ import type { SnippetDraftDto } from '../api/bindings/SnippetDraftDto';
 import type { SnippetDto } from '../api/bindings/SnippetDto';
 import type { SettingsDto } from '../api/bindings/SettingsDto';
 import type { RetentionDto } from '../api/bindings/RetentionDto';
+import type { StartupStateDto } from '../api/bindings/StartupStateDto';
 
 const MB = 1024 * 1024;
 
@@ -77,6 +78,7 @@ export function fakeApi(
   const blocked = new Set<string>();
   let settings = defaultSettings();
   let runningApps = ['notepad.exe', 'code.exe'];
+  let startup: StartupStateDto = 'disabled';
   /** Items each retention policy would remove, keyed by `days/items`. */
   const retentionImpact = new Map<string, number>();
   const impactOf = (r: RetentionDto) => retentionImpact.get(`${r.maxAgeDays}/${r.maxItems}`) ?? 0;
@@ -227,6 +229,22 @@ export function fakeApi(
     getAbout: vi.fn(async () => ({ version: '1.2.3' })),
     openAboutLink: vi.fn(async () => {}),
     openDataFolder: vi.fn(async () => {}),
+    getStartup: vi.fn(async () => startup),
+    setStartup: vi.fn(async (value: 'on' | 'off') => {
+      if (startup === 'enabled' || startup === 'disabled')
+        startup = value === 'on' ? 'enabled' : 'disabled';
+      return startup;
+    }),
+    getWelcome: vi.fn(async () => ({
+      openShortcut,
+      startup,
+      appearance: popupState.appearance,
+      locale: popupState.locale,
+    })),
+    completeWelcome: vi.fn(async (startWithWindows: boolean | null) => {
+      if (startWithWindows && startup === 'disabled') startup = 'enabled';
+      return startup;
+    }),
     on: vi.fn(async (event: AppEventName, handler: (payload: unknown) => void) => {
       handlers.set(event, [...(handlers.get(event) ?? []), handler]);
       return () => {};
@@ -238,6 +256,10 @@ export function fakeApi(
     /** Replaces the stored settings. */
     setSettings: (extra: Partial<SettingsDto>) => {
       settings = { ...settings, ...extra };
+    },
+    /** Start-with-Windows state reported by the system (CFG-003). */
+    setStartup: (state: StartupStateDto) => {
+      startup = state;
     },
     /** Applications with a visible window (CAP-009). */
     setRunningApps: (apps: string[]) => {

@@ -8,6 +8,7 @@ mod paste;
 mod paste_snippet;
 mod settings;
 mod snippets;
+mod startup;
 
 pub use capture_clipboard::{CaptureClipboard, CaptureDependencies, CaptureOutcome};
 pub use capture_state::{CaptureState, SetCaptureState, UpdateSettings};
@@ -23,6 +24,7 @@ pub use snippets::{
     ApplyHotkeyBindings, ChangeOpenHotkey, DeleteSnippet, ListSnippets, SaveSnippet,
     SnippetDependencies, SnippetDraft, SuspendHotkeys,
 };
+pub use startup::{CompleteWelcome, GetStartup, SetStartup, WelcomeChoice};
 
 pub use crate::error::HotkeyConflict;
 pub use crate::ports::Suspension;

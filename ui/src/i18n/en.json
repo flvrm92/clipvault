@@ -144,7 +144,14 @@
       },
       "capture": "Capture",
       "captureHint": "When off, what you copy is not added to the history.",
-      "captureToggle": "Capture on"
+      "captureToggle": "Capture on",
+      "startup": "Start with Windows",
+      "startupHint": "ClipVault opens in the tray when you sign in to Windows.",
+      "startupToggle": "On",
+      "startupLocked": {
+        "byUser": "Turned off in the Windows startup settings. Turn it back on there.",
+        "byPolicy": "Set by your organization’s policy."
+      }
     },
     "history": {
       "heading": "History",
@@ -238,5 +245,12 @@
     },
     "invalidSetting": "This value is not supported.",
     "invalidAppName": "Enter an executable name."
+  },
+  "welcome": {
+    "title": "Welcome to ClipVault",
+    "body": "Everything you copy is kept here.",
+    "shortcut": "Open the history with",
+    "openSettings": "Open settings",
+    "start": "Get started"
   }
 }

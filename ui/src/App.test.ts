@@ -32,6 +32,13 @@ describe('App', () => {
     ).toBeInTheDocument();
   });
 
+  it('[TRAY-006] serves the welcome window for ?view=welcome', async () => {
+    history.replaceState(null, '', '/?view=welcome');
+    render(App);
+
+    expect(await screen.findByRole('button', { name: t('welcome.start') })).toBeInTheDocument();
+  });
+
   it('serves the popup otherwise', async () => {
     render(App);
 

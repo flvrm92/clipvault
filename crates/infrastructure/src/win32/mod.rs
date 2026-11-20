@@ -14,6 +14,7 @@ mod input;
 mod listener;
 mod owner;
 mod process;
+mod startup;
 mod theme;
 mod window;
 
@@ -24,4 +25,5 @@ pub use focus::Win32FocusTracker;
 pub use hotkeys::Win32HotkeyRegistrar;
 pub use input::Win32KeystrokeSender;
 pub use listener::ClipboardListener;
+pub use startup::{MsixStartupTask, RunKeyStartup, has_package_identity, startup_manager};
 pub use theme::{SystemAppearance, system_appearance};

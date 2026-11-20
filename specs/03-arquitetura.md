@@ -90,7 +90,8 @@ Tipos puros, imutáveis quando possível, com construtores validados ("parse, do
 | `KeystrokeSender` | Enviar `Ctrl+V`; aguardar liberação de modificadores (SNP-004) |
 | `FocusTracker` | Capturar e restaurar a janela alvo; posição do caret |
 | `HotkeyRegistrar` | Registrar/desregistrar atalhos globais; reporta conflito |
-| `StartupManager` | Habilitar/consultar início automático |
+| `StartupManager` | Consultar, habilitar e desabilitar o início automático; estados de [CFG-003](01-requisitos-funcionais.md) (ADR-0008) |
+| `RunningApps` | Executáveis com janela visível, para escolher apps excluídos (CAP-009) |
 | `Clock` | `now()` — injetável para testes de retenção |
 | `EventPublisher` | Publicar `AppEvent` (ex.: `HistoryChanged`) para a UI |
 
@@ -107,6 +108,9 @@ Tipos puros, imutáveis quando possível, com construtores validados ("parse, do
 | `SaveSnippet`, `DeleteSnippet`, `ListSnippets` | SNP-001..002, SNP-006 |
 | `PasteSnippet` | SNP-003..005, SNP-007 |
 | `UpdateSettings`, `GetSettings` | CFG, THM, I18N, RET |
+| `RestoreDefaults`, `ChangeRetention`, `ChangeSizeLimit`, `ExcludeApp`, `IncludeApp`, `ListExclusionCandidates` | CFG-004, RET-004, CAP-006, CAP-009 |
+| `GetStartup`, `SetStartup`, `CompleteWelcome` | CFG-003, TRAY-006 |
+| `ClearOnExit` | RET-006 |
 | `ChangeOpenHotkey` | HK-001..004 |
 | `ApplyHotkeyBindings` | sincroniza todos os atalhos com o sistema na inicialização/alteração |
 

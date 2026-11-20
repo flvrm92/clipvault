@@ -16,6 +16,8 @@ import type { PopupStateDto } from './bindings/PopupStateDto';
 import type { ShortcutSettingsDto } from './bindings/ShortcutSettingsDto';
 import type { SnippetDraftDto } from './bindings/SnippetDraftDto';
 import type { SnippetDto } from './bindings/SnippetDto';
+import type { StartupStateDto } from './bindings/StartupStateDto';
+import type { WelcomeDto } from './bindings/WelcomeDto';
 import type { SuspensionDto } from './bindings/SuspensionDto';
 import type { LanguageDto } from './bindings/LanguageDto';
 import type { RetentionDto } from './bindings/RetentionDto';
@@ -69,6 +71,13 @@ export interface ClipVaultApi {
   getAbout(): Promise<AboutDto>;
   openAboutLink(link: AboutLinkDto): Promise<void>;
   openDataFolder(): Promise<void>;
+  getStartup(): Promise<StartupStateDto>;
+  setStartup(value: ToggleDto): Promise<StartupStateDto>;
+  getWelcome(): Promise<WelcomeDto>;
+  completeWelcome(
+    startWithWindows: boolean | null,
+    openSettings: boolean,
+  ): Promise<StartupStateDto>;
   on(event: AppEventName, handler: (payload: unknown) => void): Promise<UnlistenFn>;
 }
 
@@ -107,6 +116,11 @@ export const tauriApi: ClipVaultApi = {
   getAbout: () => invoke('get_about'),
   openAboutLink: (link) => invoke('open_about_link', { link }),
   openDataFolder: () => invoke('open_data_folder'),
+  getStartup: () => invoke('get_startup'),
+  setStartup: (value) => invoke('set_startup', { value }),
+  getWelcome: () => invoke('get_welcome'),
+  completeWelcome: (startWithWindows, openSettings) =>
+    invoke('complete_welcome', { startWithWindows, openSettings }),
   on: (event, handler) => listen(event, (e) => handler(e.payload)),
 };
 
