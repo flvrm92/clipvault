@@ -64,3 +64,10 @@ fn snp_001_a_draft_holds_name_body_optional_hotkey_and_enabled_flag() {
         Some("Ctrl+Shift+V")
     );
 }
+
+#[test]
+fn priv_003_snippet_body_debug_is_redacted() {
+    let body = SnippetBody::new("Atenciosamente, Fulano").unwrap();
+
+    assert!(!format!("{body:?}").contains("Fulano"));
+}

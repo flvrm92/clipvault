@@ -58,6 +58,9 @@
 - Tokens: contraste AA em ambos os temas (A11Y-002).
 - Acessibilidade: `axe-core` sem violações nas telas principais.
 
+### Win32
+- `crates/infrastructure/tests/win32_clipboard.rs`: testes `#[ignore]` contra o clipboard real, executados em série: `cargo test -p clipvault-infrastructure --test win32_clipboard -- --ignored --test-threads=1`. Uma sessão salva e restaura o texto do usuário. Cobrem leitura/escrita de texto e imagem, DIB, flags de privacidade, dono, listener e o fluxo ponta a ponta até o SQLite. Rodam no CI (`windows-latest`).
+
 ### Desempenho
 - `crates/infrastructure/tests/perf.rs`: testes `#[ignore]` que medem o p95 de PERF-002..004 com os adaptadores reais. Rodar em release na máquina de referência antes de cada release: `cargo test -p clipvault-infrastructure --release --test perf -- --ignored --nocapture`. Ficam fora do CI porque runners compartilhados não dão tempos estáveis.
 
@@ -99,7 +102,8 @@ jobs:
   rust      (windows-latest): cargo fmt --check · cargo clippy --all-targets (-D warnings)
                               · cargo test --workspace · cargo xtask check-arch · cargo xtask trace-reqs
                               · [M3+] cargo test -- --ignored (Win32, serial)
-  coverage  (windows-latest): cargo llvm-cov --workspace --exclude clipvault-app --fail-under-lines 85
+  coverage  (windows-latest): por camada (domain 95 · application 90 · infra sem win32 85)
+                              · win32 com seus testes reais (60) · total sem app/win32 (85)
   ui        (windows-latest): pnpm lint · pnpm check · pnpm coverage (limite 80%) · pnpm build
   audit     (ubuntu-latest) : cargo deny check · pnpm audit --prod
   [M6] assets              : tools/gen-assets --check

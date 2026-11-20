@@ -18,8 +18,16 @@ pub enum TextError {
 }
 
 /// Non-blank text captured from the clipboard, kept verbatim.
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+///
+/// `Debug` shows only the size, so clipboard content never reaches logs (PRIV-003).
+#[derive(Clone, PartialEq, Eq, Hash)]
 pub struct ClipText(String);
+
+impl std::fmt::Debug for ClipText {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "ClipText(<{} bytes>)", self.0.len())
+    }
+}
 
 impl ClipText {
     /// Validates that `text` is not blank.

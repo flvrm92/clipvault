@@ -81,8 +81,8 @@ Tipos puros, imutáveis quando possível, com construtores validados ("parse, do
 
 | Porta | Responsabilidade |
 |-------|------------------|
-| `ClipboardReader` | Ler o snapshot atual (`ClipboardSnapshot`: formatos presentes, texto, imagem bruta, flags de privacidade, dono) |
-| `ClipboardWriter` | Escrever texto/imagem; devolve o `sequence_number` resultante (para CAP-010) |
+| `ClipboardReader` | Ler o snapshot atual (`ClipboardSnapshot`: texto, imagem decodificada, flags de privacidade, dono, número de sequência). Conteúdo privado nem é lido; a imagem só é decodificada se não houver texto utilizável |
+| `ClipboardWriter` | Escrever `ClipboardContent` (texto ou imagem, esta como `PNG` + `CF_DIB`); devolve o número de sequência resultante (para CAP-010) |
 | `HistoryRepository` | CRUD/consulta de `ClipItem`, busca, paginação, `find_by_hash` |
 | `SnippetRepository` | CRUD de `Snippet` |
 | `SettingsRepository` | Ler/gravar `Settings` |
@@ -128,7 +128,9 @@ Componentes de apoio em `application::capture`:
 |--------|-----------|------------|
 | `sqlite` | `HistoryRepository`, `SnippetRepository`, `SettingsRepository` | `rusqlite` (feature `bundled`), `rusqlite_migration` |
 | `fs_images` | `ImageStore` | `image` (PNG encode/decode, resize para miniatura) |
-| `win32::clipboard` | `ClipboardReader`, `ClipboardWriter`, listener | `windows` crate: `AddClipboardFormatListener` em janela *message-only*, `WM_CLIPBOARDUPDATE`, `GetClipboardSequenceNumber` |
+| `win32::clipboard` | `ClipboardReader`, `ClipboardWriter` | `windows` crate: `OpenClipboard` com retentativas (`retry`, REL-003), formatos `CF_UNICODETEXT`, `PNG`, `CF_DIBV5`/`CF_DIB` (codec puro em `dib`), `GetClipboardSequenceNumber` |
+| `win32::listener` | Fonte de `WorkerMessage::ClipboardChanged` | `AddClipboardFormatListener` numa janela *message-only* em thread própria (Active Object) |
+| `win32::owner` | Dono do clipboard (CAP-009/011) | `GetClipboardOwner` → PID → `QueryFullProcessImageNameW`. Limitação: apps que copiam via OLE com flush (ex.: .NET/PowerShell) não expõem dono; o item é capturado com origem desconhecida |
 | `win32::input` | `KeystrokeSender` | `SendInput`, `GetAsyncKeyState` |
 | `win32::focus` | `FocusTracker` | `GetForegroundWindow`, `SetForegroundWindow` (+ `AllowSetForegroundWindow`/`AttachThreadInput` quando necessário), `GetGUIThreadInfo` |
 | `win32::hotkeys` | `HotkeyRegistrar` | `RegisterHotKey`/`UnregisterHotKey` em thread dedicada com loop de mensagens |
@@ -161,7 +163,7 @@ Componentes de apoio em `application::capture`:
 | Main (Tauri/UI) | Event loop, janelas, tray |
 | `clipboard-listener` | Janela message-only, recebe `WM_CLIPBOARDUPDATE`, aplica debounce (CAP-012) e envia `ClipboardChanged` por canal |
 | `hotkeys` | Loop de mensagens com `RegisterHotKey`; recebe comandos (registrar/remover) por canal e emite `HotkeyPressed(id)` |
-| `capture-worker` | Consome eventos, executa `CaptureClipboard` (inclui encode PNG); publica `HistoryChanged` |
+| `capture-worker` | `application::capture::CaptureWorker`: consome eventos, aplica o `Debouncer`, lê o clipboard e executa `CaptureClipboard` (inclui encode PNG); ao encerrar, conclui uma captura pendente (TRAY-005) |
 | `maintenance` | Timer horário de `PurgeExpired` |
 
 Comunicação por canais (`crossbeam-channel` ou `std::sync::mpsc`). O SQLite é acessado por **uma única conexão protegida por mutex** e compartilhada pelos repositórios (ADR-0003). Trocar por um pool só com contenção medida.

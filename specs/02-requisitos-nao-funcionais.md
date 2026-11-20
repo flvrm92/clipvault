@@ -27,7 +27,7 @@
 | REL-004 | Nenhum `panic` em código de produção fora do composition root; erros tipados (`thiserror`) e propagados. `unwrap()`/`expect()` proibidos fora de testes (lint `clippy::unwrap_used`, `clippy::expect_used`). |
 | REL-005 | Banco corrompido na inicialização: é renomeado para `history.corrupt-<timestamp>.db`, um novo banco é criado e o usuário é notificado. |
 | REL-006 | Migrações de esquema são versionadas, idempotentes e testadas a partir de cada versão anterior publicada. |
-| REL-007 | Logs rotativos em arquivo (`tracing` + `tracing-appender`), máx. 5 arquivos × 5 MB, nível padrão `info`. |
+| REL-007 | Logs rotativos em arquivo (`tracing` + `tracing-appender`) em `<data>/logs/`: um arquivo por dia, máx. 5 arquivos, nível padrão `info` (variável `CLIPVAULT_LOG` para diagnóstico). O `tracing-appender` não rotaciona por tamanho; o volume diário é pequeno porque nenhum conteúdo é logado. |
 
 ## Privacidade (PRIV)
 

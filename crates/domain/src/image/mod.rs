@@ -28,7 +28,9 @@ impl From<HashError> for ImageError {
 }
 
 /// A decoded image in 8-bit RGBA, as read from the clipboard.
-#[derive(Debug, Clone, PartialEq, Eq)]
+///
+/// `Debug` shows dimensions only: no pixel data in logs (PRIV-003).
+#[derive(Clone, PartialEq, Eq)]
 pub struct ImagePixels {
     width: u32,
     height: u32,
@@ -100,6 +102,16 @@ pub fn thumbnail_size(width: u32, height: u32) -> (u32, u32) {
         u32::try_from(scaled).unwrap_or(THUMBNAIL_MAX_SIDE).max(1)
     };
     (scale(width), scale(height))
+}
+
+impl std::fmt::Debug for ImagePixels {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("ImagePixels")
+            .field("width", &self.width)
+            .field("height", &self.height)
+            .field("bytes", &self.rgba.len())
+            .finish()
+    }
 }
 
 /// Identifier of an image file on disk: the hex content hash. Never a path (SEC-003).

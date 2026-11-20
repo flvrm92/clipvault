@@ -15,4 +15,9 @@ enforced = [
   "REL-001", "REL-002", "REL-005", "REL-006",
   "CFG-006",
   "PERF-002", "PERF-003", "PERF-004",
+  # M3 — Captura real
+  "CAP-001", "CAP-002", "CAP-009", "CAP-011",
+  "PRIV-003", "PRIV-004",
+  "REL-003",
+  "TRAY-005",
 ]

@@ -7,8 +7,9 @@ use std::sync::Mutex;
 use std::time::Duration;
 
 use clipvault_application::ports::{
-    AppEvent, ClearScope, Clock, EventPublisher, HistoryQuery, HistoryRepository, ImageStore,
-    KindFilter, Page, PortError, Removal, SettingsRepository, StoredImage,
+    AppEvent, ClearScope, ClipboardReader, ClipboardSnapshot, Clock, EventPublisher, HistoryQuery,
+    HistoryRepository, ImageStore, KindFilter, Page, PortError, Removal, SettingsRepository,
+    StoredImage,
 };
 use clipvault_domain::clip::{ClipContent, ClipItem, NewClipItem, PinState};
 use clipvault_domain::hash::ContentHash;
@@ -395,5 +396,62 @@ impl RecordingEvents {
 impl EventPublisher for RecordingEvents {
     fn publish(&self, event: AppEvent) {
         lock(&self.events).push(event);
+    }
+}
+
+/// The wall clock, for tests that involve real waiting (e.g. the capture worker).
+#[derive(Debug, Clone, Copy, Default)]
+pub struct RealClock;
+
+impl Clock for RealClock {
+    fn now(&self) -> Timestamp {
+        let millis = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .map_or(0, |d| i64::try_from(d.as_millis()).unwrap_or(i64::MAX));
+        Timestamp::from_millis(millis)
+    }
+}
+
+#[derive(Debug, Default)]
+struct ReaderState {
+    current: Option<ClipboardSnapshot>,
+    reads: usize,
+    fail_next: bool,
+}
+
+/// A clipboard whose content is set by the test.
+#[derive(Debug, Default)]
+pub struct FakeClipboardReader {
+    state: Mutex<ReaderState>,
+}
+
+impl FakeClipboardReader {
+    /// Sets what the next reads return.
+    pub fn set(&self, snapshot: ClipboardSnapshot) {
+        lock(&self.state).current = Some(snapshot);
+    }
+
+    /// Makes the next read fail as if the clipboard stayed locked.
+    pub fn fail_next(&self) {
+        lock(&self.state).fail_next = true;
+    }
+
+    /// Number of read attempts so far.
+    pub fn reads(&self) -> usize {
+        lock(&self.state).reads
+    }
+}
+
+impl ClipboardReader for FakeClipboardReader {
+    fn snapshot(&self) -> Result<ClipboardSnapshot, PortError> {
+        let mut state = lock(&self.state);
+        state.reads += 1;
+        if std::mem::take(&mut state.fail_next) {
+            return Err(PortError::Unavailable("clipboard locked".into()));
+        }
+        state
+            .current
+            .clone()
+            .ok_or_else(|| PortError::Unavailable("empty fake clipboard".into()))
     }
 }

@@ -270,3 +270,22 @@ fn ret_004_the_age_rule_is_not_applied_on_capture() {
         "age expiry runs at startup and hourly, not per capture"
     );
 }
+
+#[test]
+fn priv_004_flagged_or_excluded_content_is_never_stored() {
+    use clipvault_domain::app_name::AppName;
+    let f = Fixture::new();
+    f.settings
+        .update(|s| s.capture.excluded_apps = vec![AppName::parse("keepass.exe").unwrap()]);
+
+    let flagged = f
+        .capture(snapshot::text("secret").history_disallowed().build())
+        .unwrap();
+    let excluded = f
+        .capture(snapshot::text("secret").owner("KeePass.exe").build())
+        .unwrap();
+
+    assert_eq!(flagged, CaptureOutcome::Ignored(IgnoreReason::PrivacyFlag));
+    assert_eq!(excluded, CaptureOutcome::Ignored(IgnoreReason::ExcludedApp));
+    assert_eq!(f.history.len(), 0);
+}

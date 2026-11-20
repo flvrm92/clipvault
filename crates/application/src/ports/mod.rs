@@ -10,7 +10,10 @@ mod history;
 mod images;
 mod settings;
 
-pub use clipboard::{ClipboardSequence, ClipboardSnapshot, PrivacyFlags};
+pub use clipboard::{
+    ClipboardContent, ClipboardReader, ClipboardSequence, ClipboardSnapshot, ClipboardWriter,
+    PrivacyFlags,
+};
 pub use clock::Clock;
 pub use events::{AppEvent, EventPublisher};
 pub use history::{ClearScope, HistoryQuery, HistoryRepository, KindFilter, Page, Removal};

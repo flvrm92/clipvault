@@ -1,16 +1,22 @@
 //! Wiring of adapters into use cases (pattern: Composition Root — specs/04 §P-03).
 
 use std::path::Path;
-use std::sync::Arc;
+use std::sync::mpsc::{self, Sender};
+use std::sync::{Arc, Mutex, PoisonError};
+use std::thread::JoinHandle;
 use std::time::Duration;
 
+use clipvault_application::capture::{CaptureWorker, Debouncer, OwnWriteRegistry, WorkerMessage};
 use clipvault_application::ports::{AppEvent, EventPublisher};
-use clipvault_application::use_cases::{PurgeExpired, ReconcileImages, RetentionDependencies};
+use clipvault_application::use_cases::{
+    CaptureClipboard, CaptureDependencies, PurgeExpired, ReconcileImages, RetentionDependencies,
+};
 use clipvault_infrastructure::clock::SystemClock;
 use clipvault_infrastructure::images::FsImageStore;
 use clipvault_infrastructure::sqlite::{
     Database, DatabaseError, SqliteHistoryRepository, SqliteSettingsRepository,
 };
+use clipvault_infrastructure::win32::{ClipboardListener, Win32Clipboard};
 use tauri::{AppHandle, Emitter, Runtime};
 
 /// Interval of the background retention purge (RET-004).
@@ -43,6 +49,22 @@ impl<R: Runtime> EventPublisher for TauriEvents<R> {
     }
 }
 
+/// The running clipboard capture: listener thread → channel → worker thread (specs/03 §4).
+struct CaptureService {
+    listener: ClipboardListener,
+    inbox: Sender<WorkerMessage>,
+    worker: JoinHandle<()>,
+}
+
+impl CaptureService {
+    /// Stops notifications first, then lets the worker finish a pending capture (TRAY-005).
+    fn stop(self) {
+        self.listener.stop();
+        let _ = self.inbox.send(WorkerMessage::Shutdown);
+        let _ = self.worker.join();
+    }
+}
+
 /// Long-lived adapters shared by the use cases.
 pub struct Container {
     pub history: Arc<SqliteHistoryRepository>,
@@ -50,6 +72,8 @@ pub struct Container {
     pub settings: Arc<SqliteSettingsRepository>,
     pub clock: Arc<SystemClock>,
     pub events: Arc<dyn EventPublisher>,
+    pub own_writes: Arc<OwnWriteRegistry>,
+    capture: Mutex<Option<CaptureService>>,
 }
 
 impl Container {
@@ -66,7 +90,59 @@ impl Container {
             settings: Arc::new(SqliteSettingsRepository::new(opened.database)),
             clock: Arc::new(SystemClock),
             events: Arc::new(TauriEvents { app }),
+            own_writes: Arc::new(OwnWriteRegistry::default()),
+            capture: Mutex::new(None),
         })
+    }
+
+    /// Starts listening to the clipboard and recording changes (CAP-001..012).
+    pub fn start_capture(&self) -> std::io::Result<()> {
+        let capture = CaptureClipboard::new(CaptureDependencies {
+            history: self.history.clone(),
+            images: self.images.clone(),
+            settings: self.settings.clone(),
+            clock: self.clock.clone(),
+            events: self.events.clone(),
+            own_writes: self.own_writes.clone(),
+        });
+        let worker = CaptureWorker::new(
+            Arc::new(Win32Clipboard::new()),
+            capture,
+            self.clock.clone(),
+            Debouncer::DEFAULT_QUIET_PERIOD,
+        );
+        let (inbox, receiver) = mpsc::channel();
+        let worker = std::thread::Builder::new()
+            .name("capture-worker".into())
+            .spawn(move || worker.run(&receiver))?;
+        let listener = match ClipboardListener::start(inbox.clone()) {
+            Ok(listener) => listener,
+            Err(error) => {
+                let _ = inbox.send(WorkerMessage::Shutdown);
+                let _ = worker.join();
+                return Err(error);
+            }
+        };
+        *self.capture.lock().unwrap_or_else(PoisonError::into_inner) = Some(CaptureService {
+            listener,
+            inbox,
+            worker,
+        });
+        tracing::info!("clipboard capture started");
+        Ok(())
+    }
+
+    /// Stops the capture, finishing pending work (TRAY-005). Safe to call more than once.
+    pub fn shutdown(&self) {
+        let service = self
+            .capture
+            .lock()
+            .unwrap_or_else(PoisonError::into_inner)
+            .take();
+        if let Some(service) = service {
+            service.stop();
+            tracing::info!("clipboard capture stopped");
+        }
     }
 
     fn purge(&self) -> PurgeExpired {

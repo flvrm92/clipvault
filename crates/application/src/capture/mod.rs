@@ -6,6 +6,7 @@ mod debounce;
 mod filters;
 mod own_writes;
 mod pipeline;
+mod worker;
 
 pub use debounce::Debouncer;
 pub use filters::{
@@ -14,6 +15,7 @@ pub use filters::{
 };
 pub use own_writes::OwnWriteRegistry;
 pub use pipeline::CapturePipeline;
+pub use worker::{CaptureWorker, WorkerMessage};
 
 use clipvault_domain::capture::CaptureDecision;
 use clipvault_domain::image::ImagePixels;
@@ -22,13 +24,22 @@ use clipvault_domain::settings::CaptureSettings;
 use crate::AppError;
 use crate::ports::ClipboardSnapshot;
 
-/// Content chosen by [`ContentSelector`], not yet validated.
-#[derive(Debug, Clone, PartialEq, Eq)]
+/// Content chosen by [`ContentSelector`], not yet validated. `Debug` hides the text (PRIV-003).
+#[derive(Clone, PartialEq, Eq)]
 pub enum Candidate {
     /// Text from the clipboard.
     Text(String),
     /// Image from the clipboard.
     Image(ImagePixels),
+}
+
+impl std::fmt::Debug for Candidate {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Text(text) => write!(f, "Text(<{} bytes>)", text.len()),
+            Self::Image(pixels) => f.debug_tuple("Image").field(pixels).finish(),
+        }
+    }
 }
 
 impl Candidate {

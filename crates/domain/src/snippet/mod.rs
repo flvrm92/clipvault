@@ -65,8 +65,16 @@ impl SnippetName {
 }
 
 /// Non-blank snippet text up to [`SNIPPET_BODY_MAX_BYTES`], kept verbatim.
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+///
+/// `Debug` shows only the size (PRIV-003).
+#[derive(Clone, PartialEq, Eq, Hash)]
 pub struct SnippetBody(String);
+
+impl std::fmt::Debug for SnippetBody {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "SnippetBody(<{} bytes>)", self.0.len())
+    }
+}
 
 impl SnippetBody {
     /// Validates a body.

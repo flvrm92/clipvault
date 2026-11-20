@@ -46,3 +46,13 @@ fn hist_003_search_form_is_lowercase_without_diacritics() {
     assert_eq!(text.search_form(), "cafe com leite, acao e pao");
     assert_eq!(normalize_for_search("CAFÉ"), "cafe");
 }
+
+#[test]
+fn priv_003_debug_output_never_contains_the_text() {
+    let text = ClipText::new("senha super secreta").unwrap();
+
+    let debug = format!("{text:?}");
+
+    assert!(!debug.contains("secreta"), "{debug}");
+    assert!(debug.contains("19 bytes"), "{debug}");
+}

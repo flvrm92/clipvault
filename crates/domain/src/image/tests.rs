@@ -66,3 +66,13 @@ fn file_key_parse_accepts_only_valid_hashes() {
         Err(ImageError::InvalidFileKey)
     );
 }
+
+#[test]
+fn image_debug_shows_dimensions_not_pixels() {
+    let px = ImagePixels::new(2, 1, vec![9; 8]).unwrap();
+
+    assert_eq!(
+        format!("{px:?}"),
+        "ImagePixels { width: 2, height: 1, bytes: 8 }"
+    );
+}

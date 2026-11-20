@@ -17,7 +17,8 @@ mod fakes;
 pub mod snapshot;
 
 pub use fakes::{
-    FixedClock, FixedSettings, InMemoryHistoryRepository, InMemoryImageStore, RecordingEvents,
+    FakeClipboardReader, FixedClock, FixedSettings, InMemoryHistoryRepository, InMemoryImageStore,
+    RealClock, RecordingEvents,
 };
 
 use std::sync::{Mutex, MutexGuard, PoisonError};
