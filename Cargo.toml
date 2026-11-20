@@ -11,8 +11,10 @@ license = "LicenseRef-Proprietary"
 publish = false
 
 [workspace.dependencies]
-# Layer crates are declared here (e.g. `clipvault-domain = { path = "crates/domain" }`)
-# when first used, respecting the dependency rule (specs/03 §1, enforced by `cargo xtask check-arch`).
+# Layer crates — dependency rule: specs/03 §1, enforced by `cargo xtask check-arch`.
+clipvault-domain = { path = "crates/domain" }
+clipvault-application = { path = "crates/application" }
+clipvault-test-support = { path = "crates/test-support" }
 
 # specs/02 REL-004 · MNT-002
 [workspace.lints.rust]

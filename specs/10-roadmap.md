@@ -9,6 +9,7 @@
 | **M0 — Fundações** | Workspace Cargo, crates vazias com a regra de dependência, app Tauri "hello tray", Svelte + Vitest, CI completo (lint, testes, cobertura, audit, trace-reqs) | MNT-001..002 | CI verde; `cargo tree` prova que `domain`/`application` não dependem de infra |
 | ↳ *status M0* | ✅ Concluído localmente (2026-11-20). Falta o CI verde no GitHub, que depende do primeiro push. | | |
 | **M1 — Domínio** | Value objects, entidades, `RetentionPolicy`, `Hotkey`, pipeline de filtros com fakes (TDD) | CAP-003..008, CAP-010, CAP-012, RET-001..003, HK-003, SNP-001 (regras) | Cobertura `domain` ≥ 95%, `application` ≥ 90%; property tests |
+| ↳ *status M1* | ✅ Concluído (2026-11-20): domínio com 100% de cobertura de linhas, aplicação com 98%; property tests de `Hotkey` e `RetentionPolicy`. | | |
 | **M2 — Persistência** | SQLite + migrações, repositórios, `ImageStore`, reconciliação, benchmarks | HIST-001..007 (backend), RET-004..005, REL-001..006, PERF-002..004 | Contract tests verdes p/ fakes e reais; benchmarks dentro das metas |
 | **M3 — Captura real** | Adaptadores Win32 de clipboard (listener, leitura, escrita, flags), worker de captura | CAP-001..012, PRIV-003..004 | Copiar em qualquer app → item no banco; teste sentinela de log |
 | **M4 — Popup e colagem** | Tray, popup pré-criado, lista virtualizada, busca, filtros, colar com retorno de foco, temas | TRAY-*, HIST-*, PST-*, HK-005, THM-001..003 | E2E: abrir → buscar → colar no Notepad; PERF-001 |

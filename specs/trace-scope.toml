@@ -4,4 +4,9 @@
 enforced = [
   # M0 — Fundações
   "MNT-001",
+  # M1 — Domínio
+  "CAP-003", "CAP-004", "CAP-005", "CAP-006", "CAP-007", "CAP-008", "CAP-010", "CAP-012",
+  "RET-001", "RET-002", "RET-003",
+  "HK-003",
+  "SNP-001",
 ]

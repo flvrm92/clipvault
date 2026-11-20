@@ -70,7 +70,9 @@ Tipos puros, imutáveis quando possível, com construtores validados ("parse, do
 | `Hotkey` | Value object: `modifiers: Modifiers` (bitflags) + `key: Key`; `parse("Ctrl+Shift+1")`, `Display` canônico, `is_reserved()` |
 | `RetentionPolicy` | `max_age: Option<Duration>`, `max_items: Option<NonZeroU32>`; `select_expired(items, now) -> Vec<ClipId>` (função pura) |
 | `Settings` | Agregado de configurações com padrões (`Default`) |
-| `CaptureDecision` | `enum { Store(ClipContent), Promote(ClipId), Ignore(IgnoreReason) }` |
+| `CaptureDecision` | `enum { Store(NewClip), Promote(ClipId), Ignore(IgnoreReason) }`. `NewClip` carrega o conteúdo capturado (`CapturedContent::{Text(ClipText), Image(ImagePixels)}`) com hash e origem; a imagem ainda não foi gravada em disco |
+| `ImagePixels` | Imagem decodificada em RGBA 8 bits (validada: `len == w × h × 4`), como lida do clipboard |
+| `Timestamp` | Instante UTC em milissegundos Unix (formato do banco) |
 | `DomainError` | Erros de validação tipados |
 
 ### 3.2 `application`
@@ -108,13 +110,17 @@ Tipos puros, imutáveis quando possível, com construtores validados ("parse, do
 | `ChangeOpenHotkey` | HK-001..004 |
 | `ApplyHotkeyBindings` | sincroniza todos os atalhos com o sistema na inicialização/alteração |
 
-**Pipeline de captura** — `CaptureClipboard` aplica uma cadeia de filtros (ver padrão *Chain of Responsibility* em [04](04-padroes-de-projeto.md)):
+**Pipeline de captura** — `CaptureClipboard::execute(snapshot)` recebe o `ClipboardSnapshot` já lido pelo worker (a leitura com retentativas, REL-003, fica no adaptador) e aplica uma cadeia de filtros (ver padrão *Chain of Responsibility* em [04](04-padroes-de-projeto.md)):
 
 ```
 snapshot → PausedFilter → OwnWriteFilter → PrivacyFlagsFilter → ExcludedAppFilter
          → ContentSelector (texto > imagem) → EmptyFilter → SizeLimitFilter
          → Deduplicator (hash) → CaptureDecision
 ```
+
+Componentes de apoio em `application::capture`:
+- `OwnWriteRegistry`: números de sequência das escritas do próprio app (CAP-010), compartilhado entre os casos de uso que escrevem no clipboard e o `OwnWriteFilter`.
+- `Debouncer`: lógica pura do debounce de 100 ms (CAP-012), dirigida por timestamps. O listener Win32 (M3) só agenda o timer.
 
 ### 3.3 `infrastructure`
 

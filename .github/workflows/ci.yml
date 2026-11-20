@@ -58,6 +58,11 @@ jobs:
       - uses: taiki-e/install-action@v2
         with:
           tool: cargo-llvm-cov
+      # Avoid stale instrumented binaries restored from the cache.
+      - run: cargo llvm-cov clean --workspace
+      # Per-layer minimums (specs/08 §5).
+      - run: cargo llvm-cov -p clipvault-domain --locked --summary-only --fail-under-lines 95
+      - run: cargo llvm-cov -p clipvault-application --locked --summary-only --fail-under-lines 90
       # The composition root (app) is covered by E2E tests, not by line coverage (specs/08 §5).
       - run: cargo llvm-cov --workspace --exclude clipvault-app --locked --fail-under-lines 85 --lcov --output-path lcov.info
       - uses: actions/upload-artifact@v4

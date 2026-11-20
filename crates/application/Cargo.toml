@@ -8,3 +8,11 @@ publish.workspace = true
 
 [lints]
 workspace = true
+
+[dependencies]
+clipvault-domain.workspace = true
+thiserror = "2.0.21"
+
+[dev-dependencies]
+clipvault-test-support.workspace = true
+proptest = "1.12.0"

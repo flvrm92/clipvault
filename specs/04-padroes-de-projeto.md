@@ -50,7 +50,8 @@
 ### P-03 · Injeção de dependência via construtor + Composition Root
 - **Problema:** criar dependências dentro dos casos de uso impede testes e viola DIP.
 - **Solução:** casos de uso recebem as portas no construtor (`Arc<dyn Port>` ou genéricos `<R: HistoryRepository>`). Somente `app` (composition root) instancia adaptadores concretos.
-- **Regra de escolha:** genéricos quando o caso de uso é chamado em caminho quente (captura); `Arc<dyn Trait>` no restante para simplicidade de composição.
+- **Regra de escolha:** `Arc<dyn Trait>` por padrão, pela simplicidade de composição. Usar genéricos só onde uma medição mostrar custo relevante de despacho dinâmico. A captura acontece no ritmo humano (algumas vezes por minuto), então não se qualifica.
+- Quando há muitas dependências, agrupá-las numa struct nomeada (ex.: `CaptureDependencies`) em vez de um construtor posicional longo.
 - **Consequências:** + sem framework de DI; + dependências explícitas. − construtores com vários parâmetros; aceitável (≤ 6), acima disso revisar responsabilidade.
 
 ### P-04 · Command
@@ -61,7 +62,7 @@
 
 ### P-05 · Chain of Responsibility
 - **Problema:** a decisão de capturar envolve muitas regras independentes (pausa, privacidade, app excluído, vazio, tamanho, duplicado) que crescem com o tempo.
-- **Solução:** trait `CaptureFilter { fn apply(&self, ctx: CaptureContext) -> FilterOutcome }` com `FilterOutcome::{Continue(ctx), Stop(CaptureDecision)}`. A cadeia é uma `Vec<Box<dyn CaptureFilter>>` montada na ordem definida em [03 §3.2](03-arquitetura.md#32-application).
+- **Solução:** trait `CaptureFilter { fn name(&self) -> &'static str; fn apply(&self, ctx: CaptureContext) -> Result<FilterOutcome, AppError> }` com `FilterOutcome::{Continue(ctx), Stop(CaptureDecision)}`. A cadeia é uma `Vec<Box<dyn CaptureFilter>>` montada na ordem definida em [03 §3.2](03-arquitetura.md#32-application).
 - **Consequências:** + cada regra testada isoladamente; + OCP. − ordem importa: um teste fixa a ordem da cadeia montada.
 
 ### P-06 · Strategy

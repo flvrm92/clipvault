@@ -61,6 +61,12 @@
 ### Privacidade
 - **Teste sentinela (PRIV-003):** captura um texto `SENTINEL-<uuid>`, executa fluxos principais com log em nível `trace` e verifica que o sentinela não aparece em nenhum arquivo de log.
 
+### Organização dos testes Rust
+
+- Testes unitários de `domain` ficam em `src/<módulo>/tests.rs` (`#[cfg(test)] mod tests;`).
+- Testes de `application` que usam fakes ficam em `crates/application/tests/`. Motivo: `test-support` depende de `application`; se os testes internos do crate usassem os fakes, o Cargo compilaria duas cópias dos tipos de `application`, incompatíveis entre si. Lógica pura sem fakes (ex.: `Debouncer`) pode ser testada dentro de `src`.
+- Em `tests/*.rs` e em `test-support`, `unwrap`/`expect`/`panic` são liberados por atributo no topo do arquivo, porque é código de teste.
+
 ## 4. Rastreabilidade
 
 - Nome do teste ou atributo contém o ID do requisito: `fn cap_004_duplicate_text_is_promoted_not_inserted()`; em Vitest: `it('[HIST-003] busca ignora acentos', …)`.
