@@ -10,6 +10,7 @@
   import { FILTERS, HistoryStore } from '../lib/history.svelte';
   import { resolveKey, type KeyAction } from '../lib/keyboard';
   import BrandMark from '../lib/BrandMark.svelte';
+  import EmptyState from '../lib/EmptyState.svelte';
   import HistoryList from './HistoryList.svelte';
   import Icon from './Icon.svelte';
   import SnippetList from './SnippetList.svelte';
@@ -321,7 +322,7 @@
     <p class="empty" role="status">{t('popup.noItemsInFilter')}</p>
   {:else}
     <div class="empty" role="status">
-      <BrandMark size={56} />
+      <EmptyState />
       <strong>{t('popup.empty.title')}</strong>
       <span>{t('popup.empty.body')}</span>
       {#if popupState}

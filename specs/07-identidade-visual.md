@@ -1,16 +1,16 @@
 # 07 — Identidade visual
 
-> Status: Aprovada · v1.1 · 2026-11-20
+> Status: Aprovada · v1.2 · 2026-11-20
 
 ## 1. Conceito
 
 **ClipVault = clipboard + cofre.** A marca comunica *guardar com segurança e recuperar rápido*.
 
 - **Personalidade:** confiável, ágil, discreta, moderna.
-- **Símbolo (proposta):** uma prancheta (clipboard) estilizada em forma de quadrado arredondado, cujo **clipe superior forma o "trinco" de um cofre**; no corpo, duas ou três linhas horizontais escalonadas sugerem itens empilhados (histórico). Geometria simples, legível a 16 px.
+- **Símbolo (escolhido no M6 — proposta "Alça"):** uma prancheta em quadrado arredondado cujo **clipe superior é a alça de um cadeado** (cor `vault-teal`); no corpo (`brand-600`, com gradiente sutil para `brand-500`), duas linhas horizontais escalonadas sugerem itens empilhados; atrás, uma segunda folha (`brand-400`) deslocada para a direita indica o histórico. A versão flat (≤ 32 px) não tem a folha de trás nem gradiente, e a alça é mais grossa. As propostas descartadas foram "Trinco" (clipe com fechadura) e "Disco" (clipe como disco de segredo).
 - **Regras do símbolo:** grid de 24 unidades; traço/forma com raio consistente; sem gradientes no tamanho ≤ 32 px (versão "flat"); com gradiente sutil nos tamanhos de tile/Store.
 
-> Entregável do marco M6 ([10](10-roadmap.md)): 3 variações do símbolo em SVG para escolha antes da geração de todos os assets.
+> Bandeja: silhueta monocromática do símbolo flat com as linhas vazadas; na variante "pausado" (TRAY-003), as linhas dão lugar a duas barras de pausa vazadas. Glifo `#1B1A24` para barra clara e `#FFFFFF` para barra escura.
 
 ## 2. Paleta
 
@@ -74,7 +74,13 @@
 
 ## 6. Assets a produzir
 
-Fonte única: SVGs mestres em `assets/brand/` → geração automatizada por script (`tools/gen-assets`, usando `resvg` + `image` ou `ImageMagick`) para todos os tamanhos. **Assets gerados são versionados** e o script é idempotente; CI verifica que estão atualizados.
+Fonte única: SVGs mestres em `assets/brand/` → geração automatizada por `cargo run -p gen-assets` (crate `tools/gen-assets`, com `resvg` + `image`) para todos os tamanhos. **Assets gerados são versionados** e o script é idempotente; `cargo run -p gen-assets -- --check` falha no CI se algum arquivo estiver desatualizado, faltando ou sobrando nas pastas geradas.
+
+Regras do gerador:
+- Tamanhos até 32 px usam `logo-symbol-flat.svg`; maiores usam `logo-symbol.svg`.
+- Logos quadrados pequenos (`Square44x44Logo`, `StoreLogo`, ícone do executável) ocupam o quadro inteiro (o grid de 24 já reserva a margem de ~1/12). Tiles e splash centralizam o símbolo com metade do lado menor, sobre fundo transparente.
+- As variantes `altform-unplated` e `altform-lightunplated` usam a mesma arte colorida (contraste ≥ 3:1 nos dois fundos); a variante sem `altform` também é transparente.
+- `logo-wordmark.svg` não é rasterizado: o nome depende da fonte instalada, e isso tornaria a verificação do CI dependente da máquina.
 
 ### 6.1 SVGs mestres
 
@@ -92,7 +98,8 @@ Fonte única: SVGs mestres em `assets/brand/` → geração automatizada por scr
 | Asset | Tamanhos |
 |-------|----------|
 | `app.ico` (executável) | 16, 20, 24, 32, 40, 48, 64, 256 |
-| `tray-*.ico` (4 variantes) | 16, 20, 24, 32, 40 (cobre 100%–250% DPI) |
+| `tray-*.png` (4 variantes, `app/icons/tray/`) | 32 px. A API de bandeja do Tauri recebe um único bitmap e o Windows o reduz para o DPI do monitor; um `.ico` com vários tamanhos não seria aproveitado. |
+| `32x32.png`, `128x128.png`, `128x128@2x.png`, `icon.png` (`app/icons/`) | 32, 128, 256, 512 (ícones da janela e do bundle do Tauri) |
 
 ### 6.3 Pacote MSIX (`packaging/msix/Assets/`)
 
@@ -112,14 +119,16 @@ Escalas `100, 125, 150, 200, 400` para cada logo:
 
 > Conferir dimensões vigentes no Partner Center no momento da submissão.
 
+Gerados em `packaging/store/` (exceto capturas e trailer, produzidos à mão no M7):
+
 | Asset | Observação |
 |-------|-----------|
-| Capturas de tela | Mín. 1, recomendado 4–6, 1920 × 1080 (16:9): popup claro, popup escuro, busca, snippets, configurações |
-| Logo da Store | 1:1 (300 × 300 e 2160 × 2160) |
-| Poster art 9:16 | 720 × 1080 e 1440 × 2160 |
-| Box art 1:1 | 1080 × 1080 e 2160 × 2160 |
-| Hero / Super hero 16:9 | 1920 × 1080 e 3840 × 2160 |
-| Vídeo de trailer *(opcional)* | 15–30 s mostrando abrir → buscar → colar → snippet |
+| Capturas de tela | Mín. 1, recomendado 4–6, 1920 × 1080 (16:9): popup claro, popup escuro, busca, snippets, configurações — **M7, manual** |
+| Logo da Store | 1:1 (300 × 300 e 2160 × 2160), símbolo sobre fundo transparente |
+| Poster art 9:16 | 720 × 1080 e 1440 × 2160, símbolo sobre `ink-900` |
+| Box art 1:1 | 1080 × 1080 e 2160 × 2160, símbolo sobre `ink-900` |
+| Hero / Super hero 16:9 | 1920 × 1080 e 3840 × 2160, símbolo sobre `ink-900`, sem texto (a Store sobrepõe o nome) |
+| Vídeo de trailer *(opcional)* | 15–30 s mostrando abrir → buscar → colar → snippet — **M7, manual** |
 
 ### 6.5 Checklist de qualidade dos assets
 

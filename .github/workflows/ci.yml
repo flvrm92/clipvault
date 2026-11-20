@@ -47,6 +47,8 @@ jobs:
       - run: cargo test -p clipvault-infrastructure --test win32_hotkeys --locked -- --ignored
       - run: cargo xtask check-arch
       - run: cargo xtask trace-reqs
+      # Brand assets are generated from the master SVGs and committed (specs/07 §6).
+      - run: cargo run -p gen-assets --locked -- --check
 
   coverage:
     name: Rust · coverage

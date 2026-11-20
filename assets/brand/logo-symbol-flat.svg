@@ -1,0 +1,7 @@
+<!-- ClipVault symbol, flat version for sizes up to 32 px (specs/07 §1): no gradient, no back sheet. -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+  <path d="M7.5 10 V6.5 a4.5 4.5 0 0 1 9 0 V10" fill="none" stroke="#14B8A6" stroke-width="2.75" stroke-linecap="round"/>
+  <rect x="3" y="9" width="18" height="13.5" rx="3.5" fill="#4B3FD1"/>
+  <rect x="7" y="13" width="10" height="2.5" rx="1.25" fill="#FFFFFF"/>
+  <rect x="7" y="17.5" width="6.5" height="2.5" rx="1.25" fill="#FFFFFF"/>
+</svg>

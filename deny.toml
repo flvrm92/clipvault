@@ -24,6 +24,11 @@ allow = [
   "0BSD",
 ]
 
+# Permissive; reached only through resvg/tiny-skia in the gen-assets build tool (not shipped).
+[[licenses.exceptions]]
+crate = "arrayref"
+allow = ["BSD-2-Clause"]
+
 [licenses.private]
 ignore = true
 
