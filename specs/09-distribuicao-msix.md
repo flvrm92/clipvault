@@ -5,7 +5,7 @@
 ## 1. Estratégia
 
 - Distribuição pela **Microsoft Store** como pacote **MSIX** (app Win32 *full trust* empacotado).
-- O Tauri 2 não gera MSIX nativamente: o binário é compilado com `tauri build --no-bundle` e empacotado por script próprio com as ferramentas do Windows SDK (`MakePri`, `MakeAppx`, `SignTool`). Ver ADR-0007.
+- O Tauri 2 não gera MSIX nativamente: o binário é compilado com `pnpm tauri build --no-bundle` (Tauri CLI do workspace pnpm) e empacotado por script próprio com as ferramentas do Windows SDK (`MakePri`, `MakeAppx`, `SignTool`). Ver ADR-0007.
 - A Store assina o pacote na publicação; assinatura local (certificado de teste) apenas para sideload/QA.
 - Arquiteturas: `x64` e `arm64` em um `.msixbundle`; envio como `.msixupload`.
 
@@ -71,8 +71,8 @@ packaging/msix/
         Square150x150Logo="Assets\Square150x150Logo.png"
         Square44x44Logo="Assets\Square44x44Logo.png">
         <uap:DefaultTile Wide310x150Logo="Assets\Wide310x150Logo.png"
-                         Square71x71Logo="Assets\SmallTile.png"
-                         Square310x310Logo="Assets\LargeTile.png" />
+                         Square71x71Logo="Assets\Square71x71Logo.png"
+                         Square310x310Logo="Assets\Square310x310Logo.png" />
         <uap:SplashScreen Image="Assets\SplashScreen.png" />
       </uap:VisualElements>
 
@@ -94,32 +94,35 @@ packaging/msix/
 
 ### Notas
 
-- Sem identidade de pacote (desenvolvimento), o mesmo fluxo usa a chave `Run` do usuário ([ADR-0008](../docs/adr/0008-inicio-com-windows.md)); a versão empacotada remove esse valor na inicialização, se existir.
+- Sem identidade de pacote (desenvolvimento), o mesmo fluxo usa a chave `Run` do usuário ([ADR-0008](../docs/adr/0008-inicio-com-windows.md)). A versão empacotada não consegue remover esse valor, porque as escritas em `HKCU` são virtualizadas; a instância única (TRAY-004) evita duas cópias rodando.
 - `Enabled="false"`: o início automático só é ativado após o consentimento do usuário (primeira execução — TRAY-006/CFG-003) via `StartupTask.RequestEnableAsync()`. Se o usuário desabilitar em *Configurações do Windows → Apps → Inicialização*, o estado vira `DisabledByUser` e o app não pode reativar sozinho — a UI explica (CFG-003).
 - O app inicia sempre direto na bandeja, então não há distinção de comportamento ao ser iniciado pela StartupTask.
 - `MaxVersionTested` atualizado a cada release conforme a versão do Windows em que os testes manuais foram feitos.
-- Dados do app: com MSIX, gravações em `%LOCALAPPDATA%\<identifier>` são virtualizadas para `%LOCALAPPDATA%\Packages\<PFN>\LocalCache\Local\…` e removidas na desinstalação (PRIV-005). Teste manual na checklist.
+- Dados do app: com MSIX, gravações em `%LOCALAPPDATA%\<identifier>` são virtualizadas para `%LOCALAPPDATA%\Packages\<PFN>\LocalCache\Local\…` e removidas na desinstalação (PRIV-005). **Exceção:** se a pasta `%LOCALAPPDATA%\dev.clipvault.desktop` já existir (máquina que rodou uma build sem pacote), o Windows deixa o pacote usar a pasta real, e ela fica para trás na desinstalação. Só afeta máquinas de desenvolvimento; a checklist manual roda numa máquina ou conta sem essa pasta.
 
 ## 5. Pipeline de build
 
 ```
 tools/release.ps1 -Version 1.0.0
-  1. Sincroniza versão: Cargo.toml / tauri.conf.json / package.json = 1.0.0; MSIX = 1.0.0.0
-     (Store exige revisão = 0)
-  2. pnpm --dir ui build
-  3. cargo tauri build --no-bundle --target x86_64-pc-windows-msvc
-     cargo tauri build --no-bundle --target aarch64-pc-windows-msvc
-  4. tools/gen-assets --check
-  5. Para cada arch: monta layout/ (ClipVault.exe + Assets + Strings + manifesto renderizado)
+  1. Sincroniza versão: [workspace.package] do Cargo.toml = 1.0.0 (tauri.conf.json herda do Cargo;
+     os package.json não têm versão) + cargo update --workspace; MSIX = 1.0.0.0 (Store exige revisão = 0)
+  2. cargo run -p gen-assets -- --check; tools/third-party-notices.ps1 (ADR-0009)
+  3. pnpm tauri build --no-bundle --target x86_64-pc-windows-msvc    (o beforeBuildCommand compila a UI)
+     pnpm tauri build --no-bundle --target aarch64-pc-windows-msvc
+  4. packaging/msix/build.ps1 — para cada arch: monta target/msix/layout-<arch>/
+     (ClipVault.exe + Assets + Strings + manifesto renderizado a partir de identity.json)
      → MakePri new (resources.pri)
      → MakeAppx pack → ClipVault_1.0.0.0_<arch>.msix
-  6. MakeAppx bundle → ClipVault_1.0.0.0.msixbundle
-  7. Gera .msixupload (zip do bundle [+ símbolos .appxsym])
-  8. (QA) SignTool com certificado de teste → instalar via Add-AppxPackage
-  9. Windows App Certification Kit (WACK) — deve passar sem falhas
+  5. MakeAppx bundle → ClipVault_1.0.0.0_x64_arm64.msixbundle
+  6. Gera .msixupload (zip do bundle + símbolos .appxsym com os PDBs)
+  7. (QA) tools/new-test-cert.ps1 cria um certificado autoassinado com subject = Publisher do
+     identity.json; build.ps1 -Sign assina com SignTool → instalar via Add-AppxPackage
+  8. Windows App Certification Kit (WACK) — deve passar sem falhas
 ```
 
-- CI executa os passos 1–7 em tags `v*` e anexa artefatos ao release; submissão ao Partner Center manual na v1 (automação via Microsoft Store Submission API/`msstore` CLI é candidata futura).
+- As ferramentas do SDK são localizadas pela versão mais nova em `Windows Kits\10\bin` (sem caminho fixo).
+- CI executa os passos 1–6 em tags `v*` e anexa os artefatos a um release em rascunho; nos PRs, um job empacota só x64 (sem release) para pegar quebras do script. Submissão ao Partner Center manual na v1 (automação via Microsoft Store Submission API/`msstore` CLI é candidata futura).
+- O teste `cmp_001_…` (xtask) valida o template do manifesto: `MinVersion`, `runFullTrust`, `TaskId` e a existência de todo asset referenciado.
 
 ## 6. Justificativa da capability `runFullTrust` (texto para a submissão)
 
