@@ -1,6 +1,8 @@
 //! Application error type (specs/03 §6).
 
+use clipvault_domain::app_name::AppNameError;
 use clipvault_domain::hotkey::HotkeyError;
+use clipvault_domain::settings::SettingsError;
 use clipvault_domain::snippet::SnippetError;
 
 use crate::ports::PortError;
@@ -33,4 +35,10 @@ pub enum AppError {
     /// Another ClipVault shortcut already uses this hotkey (HK-003).
     #[error("shortcut already used by {0:?}")]
     HotkeyTaken(HotkeyConflict),
+    /// A setting value that is not offered (CAP-006).
+    #[error(transparent)]
+    InvalidSetting(#[from] SettingsError),
+    /// An application name that cannot be excluded (CAP-009).
+    #[error(transparent)]
+    InvalidAppName(#[from] AppNameError),
 }

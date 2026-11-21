@@ -5,4 +5,8 @@ import type { ThemeDto } from "./ThemeDto";
 /**
  * Appearance applied by the UI.
  */
-export type AppearanceDto = { theme: ThemeDto, backdrop: BackdropDto, };
+export type AppearanceDto = { theme: ThemeDto, backdrop: BackdropDto, 
+/**
+ * Windows accent color for this theme (`#rrggbb`) when the user enabled it (THM-004).
+ */
+accent: string | null, };

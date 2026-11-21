@@ -37,9 +37,111 @@ pub struct CaptureSettings {
 }
 
 impl CaptureSettings {
+    /// Text size limits offered to the user, in bytes (CAP-006).
+    pub const TEXT_LIMIT_OPTIONS: [u64; 4] = [256 * KIB, MIB, 5 * MIB, 10 * MIB];
+    /// Image size limits offered to the user, in uncompressed bytes (CAP-006).
+    pub const IMAGE_LIMIT_OPTIONS: [u64; 4] = [16 * MIB, 64 * MIB, 128 * MIB, 256 * MIB];
+
     /// Whether copies from `app` must be ignored.
     pub fn is_excluded(&self, app: &AppName) -> bool {
         self.excluded_apps.contains(app)
+    }
+
+    /// Ignores copies from `app`; returns `false` when it was already excluded (CAP-009).
+    pub fn exclude(&mut self, app: AppName) -> bool {
+        if self.is_excluded(&app) {
+            return false;
+        }
+        self.excluded_apps.push(app);
+        true
+    }
+
+    /// Captures copies from `app` again; returns `false` when it was not excluded (CAP-009).
+    pub fn include(&mut self, app: &AppName) -> bool {
+        let before = self.excluded_apps.len();
+        self.excluded_apps.retain(|a| a != app);
+        self.excluded_apps.len() != before
+    }
+
+    /// Changes the text size limit to one of [`Self::TEXT_LIMIT_OPTIONS`].
+    ///
+    /// # Errors
+    /// [`SettingsError::UnsupportedTextLimit`] for any other value.
+    pub fn set_max_text_bytes(&mut self, bytes: u64) -> Result<(), SettingsError> {
+        if !Self::TEXT_LIMIT_OPTIONS.contains(&bytes) {
+            return Err(SettingsError::UnsupportedTextLimit(bytes));
+        }
+        self.max_text_bytes = bytes;
+        Ok(())
+    }
+
+    /// Changes the image size limit to one of [`Self::IMAGE_LIMIT_OPTIONS`].
+    ///
+    /// # Errors
+    /// [`SettingsError::UnsupportedImageLimit`] for any other value.
+    pub fn set_max_image_bytes(&mut self, bytes: u64) -> Result<(), SettingsError> {
+        if !Self::IMAGE_LIMIT_OPTIONS.contains(&bytes) {
+            return Err(SettingsError::UnsupportedImageLimit(bytes));
+        }
+        self.max_image_bytes = bytes;
+        Ok(())
+    }
+}
+
+const KIB: u64 = 1024;
+const MIB: u64 = 1024 * KIB;
+
+/// Errors changing a setting to a value that is not offered.
+#[derive(Debug, Clone, PartialEq, Eq, thiserror::Error)]
+pub enum SettingsError {
+    /// Not one of [`CaptureSettings::TEXT_LIMIT_OPTIONS`].
+    #[error("unsupported text size limit: {0} bytes")]
+    UnsupportedTextLimit(u64),
+    /// Not one of [`CaptureSettings::IMAGE_LIMIT_OPTIONS`].
+    #[error("unsupported image size limit: {0} bytes")]
+    UnsupportedImageLimit(u64),
+}
+
+/// A section of the settings window with its own "Restore defaults" button (CFG-004).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum SettingsSection {
+    /// Language and capture state.
+    General,
+    /// Retention and size limits.
+    History,
+    /// Open shortcut and snippet behaviour (not the snippets themselves).
+    Shortcuts,
+    /// Excluded applications.
+    Privacy,
+    /// Theme and accent color.
+    Appearance,
+}
+
+impl Settings {
+    /// Resets the settings shown in `section` to their defaults (CFG-004); every other setting,
+    /// the history and the snippets are kept.
+    pub fn restore_defaults(&mut self, section: SettingsSection) {
+        let defaults = Self::default();
+        match section {
+            SettingsSection::General => {
+                self.ui.language = defaults.ui.language;
+                self.capture.paused = defaults.capture.paused;
+            }
+            SettingsSection::History => {
+                self.retention = defaults.retention;
+                self.capture.max_text_bytes = defaults.capture.max_text_bytes;
+                self.capture.max_image_bytes = defaults.capture.max_image_bytes;
+            }
+            SettingsSection::Shortcuts => {
+                self.hotkeys = defaults.hotkeys;
+                self.snippets = defaults.snippets;
+            }
+            SettingsSection::Privacy => self.capture.excluded_apps = defaults.capture.excluded_apps,
+            SettingsSection::Appearance => {
+                self.ui.theme = defaults.ui.theme;
+                self.ui.use_accent_color = defaults.ui.use_accent_color;
+            }
+        }
     }
 }
 
@@ -47,8 +149,8 @@ impl Default for CaptureSettings {
     fn default() -> Self {
         Self {
             paused: false,
-            max_text_bytes: 1024 * 1024,
-            max_image_bytes: 64 * 1024 * 1024,
+            max_text_bytes: MIB,
+            max_image_bytes: 64 * MIB,
             excluded_apps: Vec::new(),
         }
     }

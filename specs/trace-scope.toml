@@ -31,4 +31,11 @@ enforced = [
   "HK-001", "HK-002", "HK-004",
   "SNP-002", "SNP-003", "SNP-004", "SNP-005", "SNP-006", "SNP-007",
   "CFG-001", "CFG-002",
+  # M6 — Configurações, i18n e identidade
+  "CFG-003", "CFG-004", "CFG-005",
+  "THM-004",
+  "I18N-001", "I18N-002", "I18N-004",
+  "TRAY-006",
+  "RET-006",
+  "A11Y-002", "A11Y-003", "A11Y-004", "A11Y-006",
 ]

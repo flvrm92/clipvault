@@ -118,6 +118,10 @@ Tamanho padrão **380 × 520 px** (redimensionável, tamanho lembrado). Sem barr
 | **Aparência** | Tema: Sistema/Claro/Escuro (cards com pré-visualização) · Usar cor de destaque do Windows |
 | **Sobre** | Logo, versão, política de privacidade, licenças, suporte, abrir pasta de dados |
 
+- Cada seção (exceto Sobre) termina com o botão "Restaurar padrões" (CFG-004).
+- A seção visível é refletida no endereço (`#general`, `#history`, …); a navegação lateral é uma lista de links com `aria-current="page"` na seção ativa.
+- Mudar a retenção para um valor que remove itens abre uma confirmação inline ("Isso removerá {count} itens. Continuar?"); cancelar volta o seletor ao valor anterior (RET-004).
+
 ### Editor de conteúdo fixo (diálogo)
 
 ```
@@ -139,6 +143,27 @@ Tamanho padrão **380 × 520 px** (redimensionável, tamanho lembrado). Sem barr
 - Estados: *ocioso* (mostra atalho em "keycaps"), *gravando* (borda em cor da marca + "Pressione as teclas…"), *inválido* (borda de erro + mensagem), *salvo*.
 - Enquanto grava, o backend **suspende temporariamente os atalhos globais do app** para que a combinação chegue ao campo.
 - Exibe teclas como keycaps: `[Ctrl] [Win] [V]`.
+
+### Boas-vindas (TRAY-006)
+
+**440 × 360 px**, mesma janela (`welcome`), sem redimensionar, centralizada. Aparece só na primeira execução.
+
+```
+┌─ Bem-vindo ao ClipVault ─────────────────────┐
+│  ◈                                           │
+│  Bem-vindo ao ClipVault                      │
+│  Tudo o que você copiar fica guardado aqui.  │
+│                                              │
+│  Abra o histórico com  [Ctrl] [Win] [V]      │
+│                                              │
+│  ☑ Iniciar com o Windows                     │
+│                                              │
+│        [Abrir configurações]  [Começar]      │
+└──────────────────────────────────────────────┘
+```
+
+- Foco inicial em "Começar"; `Enter` confirma, `Esc` fecha sem confirmar (TRAY-006).
+- Se o início automático estiver bloqueado (CFG-003), a caixa aparece desabilitada com a explicação.
 
 ## 4. Tray
 

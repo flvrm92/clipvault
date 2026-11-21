@@ -138,7 +138,7 @@
   input:not([type='checkbox']),
   textarea {
     padding: 6px 10px;
-    border: 1px solid var(--border);
+    border: 1px solid var(--border-strong);
     border-radius: 6px;
     background: var(--surface);
     color: var(--text-primary);

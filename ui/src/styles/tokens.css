@@ -16,16 +16,26 @@
   --surface-hover: #eeeef4;
   --surface-selected: #ecebff;
   --border: #e1e0ea;
+  --border-strong: #858394;
   --text-primary: #1b1a24;
   --text-secondary: #5c5a6b;
   --accent: #4b3fd1;
   --accent-text: #ffffff;
-  --success: #0f8a7e;
-  --warning: #9a6700;
+  --success: #0b766c;
+  --warning: #8a5c00;
   --danger: #c4314b;
   --focus-ring: #4b3fd1;
   --warning-surface: #fff4ce;
+  --inverse-surface: var(--text-primary);
+  --inverse-text: var(--surface);
+  --inverse-accent: #a9a3ff;
   --popup-background: var(--surface);
+
+  /* Fixed swatches of the theme cards (settings → Aparência): never follow the active theme. */
+  --swatch-light: #f7f7fa;
+  --swatch-light-raised: #ffffff;
+  --swatch-dark: #1c1b22;
+  --swatch-dark-raised: #26252e;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -35,15 +45,17 @@
     --surface-hover: #302f3a;
     --surface-selected: #2e2a5c;
     --border: #3a3946;
+    --border-strong: #7f7d90;
     --text-primary: #f2f1f7;
     --text-secondary: #a9a7b8;
-    --accent: #8a82f2;
+    --accent: #9a93f5;
     --accent-text: #14131f;
     --success: #2dd4bf;
     --warning: #f5c451;
     --danger: #ff8a9b;
     --focus-ring: #a9a3ff;
-    --warning-surface: #433519;
+    --warning-surface: #3d3017;
+    --inverse-accent: #4b3fd1;
   }
 }
 
@@ -53,15 +65,17 @@
   --surface-hover: #302f3a;
   --surface-selected: #2e2a5c;
   --border: #3a3946;
+  --border-strong: #7f7d90;
   --text-primary: #f2f1f7;
   --text-secondary: #a9a7b8;
-  --accent: #8a82f2;
+  --accent: #9a93f5;
   --accent-text: #14131f;
   --success: #2dd4bf;
   --warning: #f5c451;
   --danger: #ff8a9b;
   --focus-ring: #a9a3ff;
-  --warning-surface: #433519;
+  --warning-surface: #3d3017;
+  --inverse-accent: #4b3fd1;
 }
 
 /* THM-002: translucent panel over the Acrylic backdrop; solid otherwise. */

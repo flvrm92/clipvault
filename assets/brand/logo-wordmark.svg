@@ -1,0 +1,15 @@
+<!-- ClipVault wordmark (specs/07 §6.1): symbol + name in Segoe UI Variable Display Semibold. Not rasterized: the name depends on the font. -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 112 24">
+  <defs>
+    <linearGradient id="w-board" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#6157E8"/>
+      <stop offset="1" stop-color="#4B3FD1"/>
+    </linearGradient>
+  </defs>
+  <rect x="5.5" y="6.5" width="16" height="16" rx="3.5" fill="#8A82F2"/>
+  <path d="M8.5 9 V6.25 a3.5 3.5 0 0 1 7 0 V9" fill="none" stroke="#14B8A6" stroke-width="2.2" stroke-linecap="round"/>
+  <rect x="2.5" y="8.5" width="16" height="14" rx="3.5" fill="url(#w-board)"/>
+  <rect x="6" y="13" width="9" height="2" rx="1" fill="#FFFFFF"/>
+  <rect x="6" y="16.75" width="6" height="2" rx="1" fill="#FFFFFF" fill-opacity="0.75"/>
+  <text x="28" y="18.5" font-family="Segoe UI Variable Display, Segoe UI, sans-serif" font-size="15" font-weight="600" fill="#1B1A24">ClipVault</text>
+</svg>

@@ -71,6 +71,7 @@
 
 <div
   class="viewport"
+  id="history-list"
   role="listbox"
   aria-label={t('popup.list.label')}
   aria-activedescendant={activeId}

@@ -10,8 +10,10 @@ use clipvault_application::ports::{
     AppEvent, ClearScope, ClipboardContent, ClipboardReader, ClipboardSequence, ClipboardSnapshot,
     ClipboardWriter, Clock, Delay, EventPublisher, FocusTracker, HistoryQuery, HistoryRepository,
     HotkeyRegistrar, ImageStore, KeystrokeSender, KindFilter, Page, PortError, Removal,
-    SettingsRepository, SnippetRepository, StoredImage, Suspension, TargetWindow, WindowHandle,
+    RunningApps, SettingsRepository, SnippetRepository, StartupManager, StartupState, StoredImage,
+    Suspension, TargetWindow, WindowHandle,
 };
+use clipvault_domain::app_name::AppName;
 use clipvault_domain::clip::{ClipContent, ClipItem, NewClipItem, PinState};
 use clipvault_domain::hash::ContentHash;
 use clipvault_domain::hotkey::{Hotkey, HotkeyOwner};
@@ -792,5 +794,73 @@ impl RecordingDelay {
 impl Delay for RecordingDelay {
     fn wait(&self, duration: Duration) {
         lock(&self.waits).push(duration);
+    }
+}
+
+/// A fixed list of running applications (CAP-009).
+#[derive(Debug, Default)]
+pub struct FakeRunningApps {
+    apps: Vec<AppName>,
+}
+
+impl FakeRunningApps {
+    /// Reports `apps`, in this order.
+    pub const fn new(apps: Vec<AppName>) -> Self {
+        Self { apps }
+    }
+}
+
+impl RunningApps for FakeRunningApps {
+    fn list(&self) -> Result<Vec<AppName>, PortError> {
+        Ok(self.apps.clone())
+    }
+}
+
+#[derive(Debug)]
+struct StartupFakeState {
+    state: StartupState,
+    calls: Vec<&'static str>,
+}
+
+/// Start-with-Windows registration kept in memory (CFG-003).
+#[derive(Debug)]
+pub struct FakeStartupManager {
+    inner: Mutex<StartupFakeState>,
+}
+
+impl FakeStartupManager {
+    /// Starts in `state`.
+    pub const fn new(state: StartupState) -> Self {
+        Self {
+            inner: Mutex::new(StartupFakeState {
+                state,
+                calls: Vec::new(),
+            }),
+        }
+    }
+
+    /// `"enable"` / `"disable"` calls received so far.
+    pub fn calls(&self) -> Vec<&'static str> {
+        lock(&self.inner).calls.clone()
+    }
+}
+
+impl StartupManager for FakeStartupManager {
+    fn state(&self) -> Result<StartupState, PortError> {
+        Ok(lock(&self.inner).state)
+    }
+
+    fn enable(&self) -> Result<StartupState, PortError> {
+        let mut inner = lock(&self.inner);
+        inner.calls.push("enable");
+        inner.state = StartupState::Enabled;
+        Ok(inner.state)
+    }
+
+    fn disable(&self) -> Result<StartupState, PortError> {
+        let mut inner = lock(&self.inner);
+        inner.calls.push("disable");
+        inner.state = StartupState::Disabled;
+        Ok(inner.state)
     }
 }

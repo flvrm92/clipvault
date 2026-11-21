@@ -9,7 +9,8 @@
     "pause": "Pausar captura",
     "resume": "Retomar captura",
     "quit": "Sair",
-    "settings": "Configurações"
+    "settings": "Configurações",
+    "about": "Sobre"
   },
   "notification": {
     "copiedOnly": "Conteúdo copiado. Cole com Ctrl+V.",
@@ -86,7 +87,12 @@
     "title": "Configurações",
     "nav": {
       "label": "Seções",
-      "shortcuts": "Atalhos"
+      "shortcuts": "Atalhos",
+      "general": "Geral",
+      "history": "Histórico",
+      "privacy": "Privacidade",
+      "appearance": "Aparência",
+      "about": "Sobre"
     },
     "shortcuts": {
       "heading": "Atalhos",
@@ -119,6 +125,98 @@
       "change": "Alterar",
       "clear": "Remover atalho",
       "hint": "Esc cancela · Backspace remove"
+    },
+    "common": {
+      "cancel": "Cancelar",
+      "continue": "Continuar"
+    },
+    "restore": {
+      "button": "Restaurar padrões"
+    },
+    "general": {
+      "heading": "Geral",
+      "language": "Idioma",
+      "languageHint": "Aplicado na hora, sem reiniciar.",
+      "languages": {
+        "system": "Idioma do Windows",
+        "ptBr": "Português (Brasil)",
+        "en": "English"
+      },
+      "capture": "Captura",
+      "captureHint": "Desligada, o que você copia não entra no histórico.",
+      "captureToggle": "Captura ativa",
+      "startup": "Iniciar com o Windows",
+      "startupHint": "O ClipVault abre na bandeja quando você entra no Windows.",
+      "startupToggle": "Ativado",
+      "startupLocked": {
+        "byUser": "Desativado nas configurações de inicialização do Windows. Reative por lá.",
+        "byPolicy": "Definido pela política da sua organização."
+      }
+    },
+    "history": {
+      "heading": "Histórico",
+      "retention": "Manter itens por",
+      "retentionHint": "Itens fixados nunca expiram.",
+      "maxItems": "Quantidade máxima",
+      "maxItemsHint": "Acima disso, os itens não fixados mais antigos são removidos.",
+      "days": {
+        "one": "{count} dia",
+        "other": "{count} dias"
+      },
+      "forever": "Para sempre",
+      "unlimited": "Ilimitado",
+      "confirmPurge": {
+        "one": "Isso removerá {count} item. Continuar?",
+        "other": "Isso removerá {count} itens. Continuar?"
+      },
+      "removed": {
+        "one": "{count} item removido.",
+        "other": "{count} itens removidos."
+      },
+      "clearOnExit": "Limpar o histórico ao sair (itens fixados são mantidos)",
+      "maxText": "Tamanho máximo de texto",
+      "maxImage": "Tamanho máximo de imagem",
+      "sizeHint": "Conteúdos maiores não são registrados.",
+      "clear": "Limpar histórico",
+      "clearHint": "Remove todos os itens não fixados.",
+      "clearConfirm": "Remover todos os itens não fixados? Itens fixados serão mantidos."
+    },
+    "privacy": {
+      "heading": "Privacidade",
+      "respectedTitle": "Sempre respeitado",
+      "respected": "O ClipVault ignora o que gerenciadores de senha e o próprio Windows marcam como privado.",
+      "excluded": "Aplicativos excluídos",
+      "excludedHint": "O que for copiado nesses aplicativos não entra no histórico.",
+      "none": "Nenhum aplicativo excluído.",
+      "remove": "Remover",
+      "name": "Nome do executável",
+      "namePlaceholder": "ex.: keepass.exe",
+      "add": "Adicionar",
+      "running": "Aplicativos abertos",
+      "runningPlaceholder": "Escolha um aplicativo…",
+      "noRunning": "Nenhum outro aplicativo aberto."
+    },
+    "appearance": {
+      "heading": "Aparência",
+      "theme": "Tema",
+      "themes": {
+        "system": "Sistema",
+        "light": "Claro",
+        "dark": "Escuro"
+      },
+      "accent": "Cor de destaque",
+      "accentHint": "Usa a cor de destaque do Windows quando ela tiver contraste suficiente.",
+      "accentToggle": "Usar a cor do Windows"
+    },
+    "about": {
+      "heading": "Sobre",
+      "version": "Versão {version}",
+      "privacy": "Política de privacidade",
+      "licenses": "Licenças de terceiros",
+      "support": "Suporte",
+      "dataFolder": "Pasta de dados",
+      "dataFolderHint": "Para diagnóstico. Não altere os arquivos.",
+      "openDataFolder": "Abrir pasta"
     }
   },
   "errors": {
@@ -144,6 +242,15 @@
       "nameTooLong": "Use no máximo 60 caracteres.",
       "bodyBlank": "Informe o conteúdo.",
       "bodyTooLarge": "O conteúdo é muito grande (máx. 100 KB)."
-    }
+    },
+    "invalidSetting": "Este valor não é suportado.",
+    "invalidAppName": "Informe o nome de um executável."
+  },
+  "welcome": {
+    "title": "Bem-vindo ao ClipVault",
+    "body": "Tudo o que você copiar fica guardado aqui.",
+    "shortcut": "Abra o histórico com",
+    "openSettings": "Abrir configurações",
+    "start": "Começar"
   }
 }

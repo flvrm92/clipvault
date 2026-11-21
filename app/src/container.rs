@@ -7,9 +7,9 @@ use std::thread::JoinHandle;
 use std::time::Duration;
 
 use clipvault_application::capture::{CaptureWorker, Debouncer, OwnWriteRegistry, WorkerMessage};
-use clipvault_application::ports::{AppEvent, EventPublisher};
+use clipvault_application::ports::{AppEvent, EventPublisher, StartupManager};
 use clipvault_application::use_cases::{
-    ApplyHotkeyBindings, CaptureClipboard, CaptureDependencies, PasteDependencies,
+    ApplyHotkeyBindings, CaptureClipboard, CaptureDependencies, ClearOnExit, PasteDependencies,
     PasteSnippetDependencies, PurgeExpired, ReconcileImages, RetentionDependencies,
     SnippetDependencies,
 };
@@ -21,11 +21,11 @@ use clipvault_infrastructure::sqlite::{
 };
 use clipvault_infrastructure::win32::{
     ClipboardListener, Win32Clipboard, Win32FocusTracker, Win32HotkeyRegistrar,
-    Win32KeystrokeSender,
+    Win32KeystrokeSender, Win32RunningApps, startup_manager,
 };
 use tauri::{AppHandle, Emitter, Wry};
 
-use crate::{hotkeys, tray};
+use crate::{hotkeys, preferences, tray};
 
 /// Interval of the background retention purge (RET-004).
 const PURGE_INTERVAL: Duration = Duration::from_hours(1);
@@ -54,7 +54,10 @@ impl EventPublisher for TauriEvents {
                 tray::refresh(&self.app);
                 "capture://changed"
             }
-            AppEvent::SettingsChanged => "settings://changed",
+            AppEvent::SettingsChanged => {
+                preferences::apply(&self.app);
+                "settings://changed"
+            }
         };
         if let Err(error) = self.app.emit(name, ()) {
             tracing::warn!(%error, name, "failed to emit event");
@@ -91,6 +94,8 @@ pub struct Container {
     pub keys: Arc<Win32KeystrokeSender>,
     pub snippets: Arc<SqliteSnippetRepository>,
     pub registrar: Arc<Win32HotkeyRegistrar>,
+    pub running_apps: Arc<Win32RunningApps>,
+    pub startup: Arc<dyn StartupManager>,
     capture: Mutex<Option<CaptureService>>,
 }
 
@@ -111,6 +116,8 @@ impl Container {
             settings: Arc::new(SqliteSettingsRepository::new(opened.database.clone())),
             snippets: Arc::new(SqliteSnippetRepository::new(opened.database)),
             registrar: Arc::new(registrar),
+            running_apps: Arc::new(Win32RunningApps),
+            startup: startup_manager(),
             clock: Arc::new(SystemClock),
             events: Arc::new(TauriEvents { app }),
             own_writes: Arc::new(OwnWriteRegistry::default()),
@@ -208,7 +215,8 @@ impl Container {
         Ok(())
     }
 
-    /// Stops the capture, finishing pending work (TRAY-005). Safe to call more than once.
+    /// Stops the capture, finishing pending work (TRAY-005), then clears the history if the
+    /// user asked for it (RET-006). Safe to call more than once.
     pub fn shutdown(&self) {
         self.registrar.stop();
         let service = self
@@ -220,16 +228,32 @@ impl Container {
             service.stop();
             tracing::info!("clipboard capture stopped");
         }
+        match ClearOnExit::new(
+            self.history.clone(),
+            self.images.clone(),
+            self.settings.clone(),
+        )
+        .execute()
+        {
+            Ok(0) => {}
+            Ok(removed) => tracing::info!(removed, "history cleared on exit"),
+            Err(error) => tracing::warn!(%error, "history could not be cleared on exit"),
+        }
     }
 
-    fn purge(&self) -> PurgeExpired {
-        PurgeExpired::new(RetentionDependencies {
+    /// Ports for retention changes (RET-004, CFG-004).
+    pub fn retention_dependencies(&self) -> RetentionDependencies {
+        RetentionDependencies {
             history: self.history.clone(),
             images: self.images.clone(),
             settings: self.settings.clone(),
             clock: self.clock.clone(),
             events: self.events.clone(),
-        })
+        }
+    }
+
+    fn purge(&self) -> PurgeExpired {
+        PurgeExpired::new(self.retention_dependencies())
     }
 
     /// Startup maintenance (RET-004, RET-005) followed by an hourly purge on a background thread.

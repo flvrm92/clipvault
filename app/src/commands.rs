@@ -22,7 +22,8 @@ use crate::dto::{
     PopupStateDto, ShortcutSettingsDto, SnippetDraftDto, SnippetDto, SuspensionDto,
 };
 use crate::popup::{self, PopupState};
-use crate::{appearance, notify, settings_window};
+use crate::settings_window::Page;
+use crate::{appearance, notify, preferences, settings_window};
 
 type CommandResult<T> = Result<T, CommandError>;
 
@@ -188,18 +189,14 @@ pub fn set_restore_clipboard(
 /// synchronous command (main thread, inside an IPC call) leaves it blank on Windows.
 #[tauri::command]
 pub async fn open_settings(app: AppHandle<Wry>) {
-    open_settings_window(&app);
+    open_settings_window(&app, Page::General);
 }
 
-/// Opens the settings window with the current backdrop (tray, popup, command).
-pub fn open_settings_window(app: &AppHandle<Wry>) {
-    use clipvault_application::ports::SettingsRepository;
+/// Opens the settings window on `page` with the current backdrop (tray, popup, command).
+pub fn open_settings_window(app: &AppHandle<Wry>, page: Page) {
     popup::hide(app);
-    let mode = app.state::<Container>().settings.load().map_or_else(
-        |_| clipvault_domain::settings::ThemeMode::default(),
-        |s| s.ui.theme,
-    );
-    settings_window::open(app, appearance::current(mode).backdrop);
+    let ui = preferences::settings(app).ui;
+    settings_window::open(app, appearance::current(ui).backdrop, page);
 }
 
 /// HIST-011: copies an item without pasting and closes the popup.
@@ -265,7 +262,8 @@ pub fn get_popup_state(container: State<'_, Container>) -> CommandResult<PopupSt
     Ok(PopupStateDto {
         open_shortcut: settings.hotkeys.open.to_string(),
         capture_paused: settings.capture.paused,
-        appearance: appearance::current(settings.ui.theme),
+        appearance: appearance::current(settings.ui),
+        locale: preferences::locale(&settings).tag().to_owned(),
     })
 }
 

@@ -55,3 +55,28 @@ describe('message catalogs', () => {
     }
   });
 });
+
+describe('runtime locale', () => {
+  it('[I18N-002] switching the locale changes translations without reloading', async () => {
+    const { getLocale, setLocale, t } = await import('./index');
+
+    setLocale('en');
+    expect(t('tray.quit')).toBe('Quit');
+    setLocale('pt-BR');
+    expect(t('tray.quit')).toBe('Sair');
+    expect(getLocale()).toBe('pt-BR');
+    expect(document.documentElement.lang).toBe('pt-BR');
+  });
+});
+
+describe('plurals', () => {
+  it('[I18N-003] picks the plural form and formats the count for the locale', async () => {
+    const { setLocale, tn } = await import('./index');
+
+    setLocale('en');
+    expect(tn('settings.history.removed', 1)).toBe('1 item removed.');
+    expect(tn('settings.history.removed', 1500)).toBe('1,500 items removed.');
+    setLocale('pt-BR');
+    expect(tn('settings.history.removed', 1500)).toBe('1.500 itens removidos.');
+  });
+});

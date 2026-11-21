@@ -94,6 +94,7 @@ packaging/msix/
 
 ### Notas
 
+- Sem identidade de pacote (desenvolvimento), o mesmo fluxo usa a chave `Run` do usuário ([ADR-0008](../docs/adr/0008-inicio-com-windows.md)); a versão empacotada remove esse valor na inicialização, se existir.
 - `Enabled="false"`: o início automático só é ativado após o consentimento do usuário (primeira execução — TRAY-006/CFG-003) via `StartupTask.RequestEnableAsync()`. Se o usuário desabilitar em *Configurações do Windows → Apps → Inicialização*, o estado vira `DisabledByUser` e o app não pode reativar sozinho — a UI explica (CFG-003).
 - O app inicia sempre direto na bandeja, então não há distinção de comportamento ao ser iniciado pela StartupTask.
 - `MaxVersionTested` atualizado a cada release conforme a versão do Windows em que os testes manuais foram feitos.

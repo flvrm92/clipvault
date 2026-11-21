@@ -1,0 +1,232 @@
+/* Settings window (specs/06 §3). Shared by every section; tokens only (specs/07 §2). */
+.settings {
+  display: grid;
+  grid-template-columns: 200px 1fr;
+  height: 100vh;
+  background: var(--popup-background);
+  color: var(--text-primary);
+}
+
+.settings nav {
+  display: grid;
+  align-content: start;
+  gap: 4px;
+  padding: 16px 8px;
+}
+
+.settings .brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 8px 12px;
+  font-weight: 600;
+}
+
+.settings nav a {
+  position: relative;
+  padding: 8px 12px;
+  border-radius: 6px;
+  color: var(--text-primary);
+  text-decoration: none;
+}
+
+.settings nav a:hover {
+  background: var(--surface-hover);
+}
+
+.settings nav a[aria-current='page'] {
+  background: var(--surface-hover);
+  font-weight: 600;
+}
+
+.settings nav a[aria-current='page']::before {
+  content: '';
+  position: absolute;
+  left: 2px;
+  top: 50%;
+  width: 3px;
+  height: 16px;
+  border-radius: 2px;
+  background: var(--accent);
+  transform: translateY(-50%);
+}
+
+.settings main {
+  overflow-y: auto;
+  padding: 16px 28px 28px;
+}
+
+.settings h1 {
+  margin: 4px 0 16px;
+  font-size: 28px;
+  font-weight: 600;
+}
+
+.settings section {
+  display: grid;
+  gap: 12px;
+  margin-bottom: 12px;
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface-raised);
+}
+
+.settings .row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 16px;
+}
+
+.settings h2 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.settings .hint,
+.settings .empty {
+  margin: 2px 0 0;
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
+.settings label.check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.settings select,
+.settings input[type='text'] {
+  min-width: 180px;
+  padding: 6px 8px;
+  border: 1px solid var(--border-strong);
+  border-radius: 6px;
+  background: var(--surface);
+  color: var(--text-primary);
+  font: inherit;
+}
+
+.settings button {
+  padding: 6px 14px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface);
+  color: var(--text-primary);
+  font: inherit;
+  cursor: pointer;
+}
+
+.settings button:hover {
+  background: var(--surface-hover);
+}
+
+.settings button.primary {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: var(--accent-text);
+}
+
+.settings button.danger {
+  border-color: var(--danger);
+  background: var(--danger);
+  color: var(--accent-text);
+}
+
+.settings button.icon {
+  display: inline-flex;
+  padding: 4px 8px;
+  border-color: transparent;
+  background: transparent;
+  color: var(--text-secondary);
+}
+
+.settings :focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+.settings .confirm {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+}
+
+.settings .confirm span {
+  flex: 1;
+}
+
+.settings .error {
+  margin: 0;
+  color: var(--danger);
+  font-size: 12px;
+}
+
+.settings .status {
+  margin: 0;
+  color: var(--success);
+  font-size: 12px;
+}
+
+.settings .list {
+  display: grid;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.settings .list li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 6px 8px;
+  border-radius: 6px;
+}
+
+.settings .list li:hover {
+  background: var(--surface-hover);
+}
+
+.settings .restore {
+  justify-self: start;
+}
+
+.settings kbd {
+  padding: 1px 6px;
+  border: 1px solid var(--border);
+  border-bottom-width: 2px;
+  border-radius: 4px;
+  background: var(--surface);
+  font-family: inherit;
+  font-size: 12px;
+}
+
+@media (max-width: 600px) {
+  .settings {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto 1fr;
+  }
+
+  .settings nav {
+    display: flex;
+    flex-wrap: wrap;
+    padding: 8px;
+  }
+}
+
+@media (forced-colors: active) {
+  .settings nav a[aria-current='page']::before {
+    background: Highlight;
+  }
+
+  .settings section {
+    border-color: CanvasText;
+  }
+}

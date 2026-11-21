@@ -12,6 +12,7 @@ use crate::ports::{
 };
 
 /// Ports required by the snippet and shortcut use cases.
+#[derive(Clone)]
 pub struct SnippetDependencies {
     /// Snippet persistence.
     pub snippets: Arc<dyn SnippetRepository>,

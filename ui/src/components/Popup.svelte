@@ -5,10 +5,12 @@
   import type { KindFilterDto } from '../api/bindings/KindFilterDto';
   import type { PopupStateDto } from '../api/bindings/PopupStateDto';
   import type { SnippetDto } from '../api/bindings/SnippetDto';
-  import { t } from '../i18n';
+  import { setLocale, t } from '../i18n';
+  import { applyAppearance } from '../lib/appearance';
   import { FILTERS, HistoryStore } from '../lib/history.svelte';
   import { resolveKey, type KeyAction } from '../lib/keyboard';
   import BrandMark from '../lib/BrandMark.svelte';
+  import EmptyState from '../lib/EmptyState.svelte';
   import HistoryList from './HistoryList.svelte';
   import Icon from './Icon.svelte';
   import SnippetList from './SnippetList.svelte';
@@ -81,8 +83,8 @@
 
   async function refreshState() {
     popupState = await api.getPopupState();
-    document.documentElement.dataset.theme = popupState.appearance.theme;
-    document.documentElement.dataset.backdrop = popupState.appearance.backdrop;
+    applyAppearance(popupState.appearance);
+    setLocale(popupState.locale);
   }
 
   async function opened() {
@@ -190,6 +192,7 @@
       api.on('history://changed', () => void store.reload()),
       api.on('capture://changed', () => void refreshState()),
       api.on('appearance://changed', () => void refreshState()),
+      api.on('settings://changed', () => void refreshState()),
     ];
     void opened();
     return () => subscriptions.forEach((s) => void s.then((unlisten) => unlisten()));
@@ -244,7 +247,6 @@
       oninput={(e) => store.setSearch(e.currentTarget.value)}
       placeholder={t('popup.search.placeholder')}
       aria-label={t('popup.search.label')}
-      aria-controls="history-list"
       spellcheck="false"
       autocomplete="off"
     />
@@ -320,7 +322,7 @@
     <p class="empty" role="status">{t('popup.noItemsInFilter')}</p>
   {:else}
     <div class="empty" role="status">
-      <BrandMark size={56} />
+      <EmptyState />
       <strong>{t('popup.empty.title')}</strong>
       <span>{t('popup.empty.body')}</span>
       {#if popupState}
@@ -444,7 +446,7 @@
     margin: 4px 12px 8px;
     padding: 0 10px;
     height: 34px;
-    border: 1px solid var(--border);
+    border: 1px solid var(--border-strong);
     border-bottom: 2px solid var(--accent);
     border-radius: 6px;
     background: var(--surface-raised);
@@ -575,13 +577,13 @@
     align-items: center;
     padding: 8px 12px;
     border-radius: var(--radius);
-    background: var(--text-primary);
-    color: var(--surface);
+    background: var(--inverse-surface);
+    color: var(--inverse-text);
     font-size: 12px;
   }
 
   .toast button {
-    color: var(--brand-400);
+    color: var(--inverse-accent);
   }
 
   .toast.error {

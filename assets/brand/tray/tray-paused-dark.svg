@@ -1,7 +1,12 @@
-<!-- PLACEHOLDER (M4): paused tray glyph for a dark taskbar (TRAY-003); final art in M6 -->
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-  <rect x="12" y="10" width="40" height="48" rx="8" fill="none" stroke="#FFFFFF" stroke-width="5" stroke-opacity="0.55"/>
-  <rect x="22" y="4" width="20" height="12" rx="4" fill="#FFFFFF" fill-opacity="0.55"/>
-  <rect x="23" y="25" width="6" height="21" rx="2" fill="#FFFFFF"/>
-  <rect x="35" y="25" width="6" height="21" rx="2" fill="#FFFFFF"/>
+<!-- Paused tray glyph for a dark taskbar (TRAY-003): pause bars cut out instead of the lines. Grid 24. -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+  <defs>
+    <mask id="cut">
+      <rect width="24" height="24" fill="#FFFFFF"/>
+      <rect x="8.5" y="12" width="2.5" height="7.5" rx="1" fill="#000000"/>
+      <rect x="13" y="12" width="2.5" height="7.5" rx="1" fill="#000000"/>
+    </mask>
+  </defs>
+  <path d="M7.5 10 V6.5 a4.5 4.5 0 0 1 9 0 V10" fill="none" stroke="#FFFFFF" stroke-width="2.75" stroke-linecap="round"/>
+  <rect x="3" y="9" width="18" height="13.5" rx="3.5" fill="#FFFFFF" mask="url(#cut)"/>
 </svg>

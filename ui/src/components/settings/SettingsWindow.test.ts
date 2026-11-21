@@ -1,12 +1,12 @@
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/svelte';
 import { describe, expect, it } from 'vitest';
-import { t } from '../i18n';
-import { fakeApi, snippet } from '../test/fakeApi';
-import Settings from './Settings.svelte';
+import { t } from '../../i18n';
+import { fakeApi, snippet } from '../../test/fakeApi';
+import SettingsWindow from './SettingsWindow.svelte';
 
 async function open(snippets = [snippet(1, 'Assinatura', { hotkey: 'Ctrl+Shift+1' })]) {
   const fake = fakeApi([], {}, snippets);
-  render(Settings, { api: fake.api });
+  render(SettingsWindow, { api: fake.api, initial: 'shortcuts' });
   await screen.findByRole('heading', { level: 1, name: t('settings.shortcuts.heading') });
   return fake;
 }

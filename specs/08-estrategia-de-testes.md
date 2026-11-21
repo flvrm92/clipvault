@@ -110,7 +110,7 @@ jobs:
                               · win32 com seus testes reais (60) · total sem app/win32 (85)
   ui        (windows-latest): pnpm lint · pnpm check · pnpm coverage (limite 80%) · pnpm build
   audit     (ubuntu-latest) : cargo deny check · pnpm audit --prod
-  [M6] assets              : tools/gen-assets --check
+  [M6] assets              : cargo run -p gen-assets -- --check
   [M4+] e2e (nightly/release): build MSIX de teste · tauri-driver + WebdriverIO
 ```
 

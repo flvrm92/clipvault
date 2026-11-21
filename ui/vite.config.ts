@@ -13,6 +13,8 @@ export default defineConfig({
     environment: 'jsdom',
     include: ['src/**/*.{test,spec}.ts'],
     setupFiles: ['./src/test/setup.ts'],
+    // The contrast test (A11Y-002) reads the real design tokens with `?raw`.
+    css: { include: [/tokens\.css/] },
     coverage: {
       provider: 'v8',
       include: ['src/**/*.{ts,svelte}'],

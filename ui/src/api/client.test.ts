@@ -38,6 +38,26 @@ describe('tauriApi', () => {
     await tauriApi.setHotkeySuspension('suspended');
     await tauriApi.setRestoreClipboard('off');
     await tauriApi.openSettings();
+    const retention = { maxAgeDays: 7, maxItems: null };
+    await tauriApi.getSettings();
+    await tauriApi.setLanguage('ptBr');
+    await tauriApi.setTheme('dark');
+    await tauriApi.setUseAccentColor('on');
+    await tauriApi.previewRetention(retention);
+    await tauriApi.setRetention(retention);
+    await tauriApi.setClearOnExit('on');
+    await tauriApi.setSizeLimit('text', 1024);
+    await tauriApi.addExcludedApp('keepass.exe');
+    await tauriApi.removeExcludedApp('keepass.exe');
+    await tauriApi.listRunningApps();
+    await tauriApi.restoreDefaults('history');
+    await tauriApi.getAbout();
+    await tauriApi.openAboutLink('support');
+    await tauriApi.openDataFolder();
+    await tauriApi.getStartup();
+    await tauriApi.setStartup('on');
+    await tauriApi.getWelcome();
+    await tauriApi.completeWelcome(true, false);
 
     expect(invoke.mock.calls).toEqual([
       ['list_history', { query }],
@@ -59,6 +79,25 @@ describe('tauriApi', () => {
       ['set_hotkey_suspension', { suspension: 'suspended' }],
       ['set_restore_clipboard', { value: 'off' }],
       ['open_settings'],
+      ['get_settings'],
+      ['set_language', { language: 'ptBr' }],
+      ['set_theme', { theme: 'dark' }],
+      ['set_use_accent_color', { value: 'on' }],
+      ['preview_retention', { retention }],
+      ['set_retention', { retention }],
+      ['set_clear_on_exit', { value: 'on' }],
+      ['set_size_limit', { limit: 'text', bytes: 1024 }],
+      ['add_excluded_app', { name: 'keepass.exe' }],
+      ['remove_excluded_app', { name: 'keepass.exe' }],
+      ['list_running_apps'],
+      ['restore_defaults', { section: 'history' }],
+      ['get_about'],
+      ['open_about_link', { link: 'support' }],
+      ['open_data_folder'],
+      ['get_startup'],
+      ['set_startup', { value: 'on' }],
+      ['get_welcome'],
+      ['complete_welcome', { startWithWindows: true, openSettings: false }],
     ]);
   });
 
