@@ -79,6 +79,6 @@
 | ID | Requisito |
 |----|-----------|
 | CMP-001 | Windows 11 (alvo principal) e Windows 10 22H2 (build 19045). `MinVersion` do manifesto: `10.0.19041.0`. |
-| CMP-002 | Arquiteturas: **x64** e **arm64**. |
-| CMP-003 | Dependência do WebView2 Evergreen Runtime (presente por padrão no Win11 e no Win10 atualizado). Na ausência, o app exibe instrução de instalação. |
-| CMP-004 | Multi-monitor com DPIs diferentes (Per-Monitor V2). |
+| CMP-002 | Arquiteturas: **x64** e **arm64**. `[manual]` (o build gera um `.msix` por arquitetura; execução em arm64 na checklist de release). |
+| CMP-003 | Dependência do WebView2 Evergreen Runtime (presente por padrão no Win11 e no Win10 atualizado). O app verifica o runtime **antes** de criar qualquer janela (chave `pv` do cliente EdgeUpdate do WebView2, em HKLM e HKCU; vazia ou `0.0.0.0` = ausente). Na ausência, exibe uma caixa de mensagem nativa no idioma do sistema (PT-BR ou EN) com o endereço de download do runtime e encerra com código de erro, sem panic. |
+| CMP-004 | Multi-monitor com DPIs diferentes (Per-Monitor V2). `[manual]` (checklist de release). |

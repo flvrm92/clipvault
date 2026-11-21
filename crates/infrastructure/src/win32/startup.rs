@@ -35,12 +35,13 @@ pub fn has_package_identity() -> bool {
 /// The adapter for this process (ADR-0008).
 pub fn startup_manager() -> Arc<dyn StartupManager> {
     if has_package_identity() {
-        // A Run entry left by an unpackaged build would start a second copy (ADR-0008).
-        if let Some(run) = RunKeyStartup::for_current_exe() {
-            let _ = run.disable();
-        }
+        // No cleanup of a Run entry left by an unpackaged build: MSIX virtualizes HKCU writes,
+        // so a delete would only hide it from this package (ADR-0008). TRAY-004's single
+        // instance keeps a second copy from running.
+        tracing::info!("start with Windows: MSIX StartupTask");
         Arc::new(MsixStartupTask)
     } else {
+        tracing::info!("start with Windows: Run key (no package identity)");
         match RunKeyStartup::for_current_exe() {
             Some(run) => Arc::new(run),
             None => Arc::new(Unsupported),

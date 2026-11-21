@@ -120,6 +120,24 @@ jobs:
           package-manager-cache: false
       - run: pnpm audit --prod
 
+  # Dry run of the MSIX packaging (specs/09 §5): x64 only, unsigned, nothing published.
+  # The full x64 + arm64 build runs in release.yml on version tags.
+  package:
+    name: MSIX · package dry run (x64)
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: rustup show active-toolchain || rustup toolchain install
+      - uses: Swatinem/rust-cache@v2
+      - run: pnpm tauri build --no-bundle --target x86_64-pc-windows-msvc
+      - run: packaging/msix/build.ps1 -Version 0.0.1 -Arch x64
+        shell: pwsh
+
   # Added in later milestones (specs/10):
-  # - assets (M6): tools/gen-assets --check
   # - e2e (M4+, nightly/release): tauri-driver + WebdriverIO against the packaged app

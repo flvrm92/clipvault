@@ -13,6 +13,7 @@ mod notify;
 mod popup;
 mod preferences;
 mod protocol;
+mod runtime_check;
 mod settings_commands;
 mod settings_window;
 mod tray;
@@ -24,6 +25,8 @@ use tauri::{Manager, RunEvent, WindowEvent};
 use crate::container::Container;
 use crate::i18n::Translator;
 use crate::popup::{POPUP, PopupState};
+
+pub use crate::runtime_check::webview2_available;
 
 fn on_window_event(window: &tauri::Window, event: &WindowEvent) {
     match event {

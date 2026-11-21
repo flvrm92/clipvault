@@ -12,3 +12,4 @@ Formato: contexto → decisão → alternativas → consequências. Status: `Pro
 | [0006](0006-frontend-svelte.md) | Frontend em Svelte 5 + TypeScript | Aceita |
 | [0007](0007-empacotamento-msix.md) | Empacotamento MSIX por script com Windows SDK | Aceita |
 | [0008](0008-inicio-com-windows.md) | Início com o Windows: StartupTask com fallback na chave Run | Aceita |
+| [0009](0009-avisos-de-licencas.md) | Avisos de licenças de terceiros gerados por ferramenta | Aceita |
