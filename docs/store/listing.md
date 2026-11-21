@@ -36,7 +36,7 @@ Classificação esperada: **Livre / Everyone (3+)**.
 
 ## English (en-us)
 
-**Product name:** ClipVault
+**Product name:** Clip-Vault (must match the reserved name)
 
 **Short description** (≤ 100 characters em apps de desktop: usar a mesma frase como "Short title" se pedido)
 
@@ -83,7 +83,7 @@ First release.
 
 ## Português (pt-br)
 
-**Nome do produto:** ClipVault
+**Nome do produto:** Clip-Vault (igual ao nome reservado)
 
 **Descrição curta**
 

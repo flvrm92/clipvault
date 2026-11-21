@@ -13,7 +13,7 @@
 
 | Item | Ação |
 |------|------|
-| Reserva de nome | Reservar **"ClipVault"** (ter alternativas: "ClipVault — Clipboard Manager", "Clip Vault"). |
+| Reserva de nome | Nome reservado: **"Clip-Vault"**. O `AppDisplayName` dos `resources.resw` (Menu Iniciar e Store) e o `StartupTaskDisplayName` usam exatamente esse nome — a Store rejeita pacote cujo nome de exibição não é um nome reservado. Dentro do app a marca continua "ClipVault". |
 | Identidade do pacote | Copiar `Package/Identity/Name`, `Publisher` (`CN=…`) e `PublisherDisplayName` de *Gerenciamento de produto → Identidade do produto* para `packaging/msix/identity.json` (não hardcodar no manifesto; o script injeta). |
 | Capability restrita | `runFullTrust` exige justificativa na submissão — texto pronto na §6. |
 | Política de privacidade | URL pública obrigatória (PRIV-006). |
@@ -132,7 +132,7 @@ tools/release.ps1 -Version 1.0.0
 
 | Campo | PT-BR | EN |
 |-------|-------|----|
-| Nome | ClipVault | ClipVault |
+| Nome | Clip-Vault | Clip-Vault |
 | Descrição curta | Histórico de área de transferência rápido e privado, com atalhos para seus textos favoritos. | Fast, private clipboard history with shortcuts for your favorite snippets. |
 | Recursos (bullets) | Histórico de textos e imagens · Busca instantânea · Atalho global configurável · Conteúdos fixos com atalhos · Retenção configurável · Tema claro e escuro · 100% local | Text & image history · Instant search · Configurable global shortcut · Snippets with hotkeys · Configurable retention · Light & dark themes · 100% local |
 | Categoria | Produtividade | Productivity |

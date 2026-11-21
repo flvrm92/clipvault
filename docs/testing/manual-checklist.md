@@ -17,14 +17,14 @@
 - [ ] `tools/new-test-cert.ps1` executado e o `.cer` importado em `LocalMachine\TrustedPeople` (uma vez por máquina).
 - [ ] `tools/release.ps1 -Version X.Y.Z -Sign` gera `ClipVault_X.Y.Z.0_x64.msix`, `…_arm64.msix`, o `.msixbundle` e o `.msixupload` sem erros.
 - [ ] `Add-AppxPackage target\msix\ClipVault_X.Y.Z.0_x64_arm64.msixbundle` instala sem avisos.
-- [ ] Menu Iniciar mostra "ClipVault" com o ícone da marca; nome e descrição em PT-BR com Windows em português e em EN com Windows em inglês.
+- [ ] Menu Iniciar mostra "Clip-Vault" com o ícone da marca; nome e descrição em PT-BR com Windows em português e em EN com Windows em inglês.
 - [ ] Primeira execução: o app vai para a bandeja e mostra as boas-vindas (TRAY-006).
 - [ ] O log em `logs\` registra "start with Windows: MSIX StartupTask" (identidade de pacote detectada).
 - [ ] **WACK**: `appcert.exe test -appxpackagepath <bundle> -reportoutputpath target\msix\wack.xml` → resultado *PASSED*; relatório anexado ao PR.
 
 ## 2. Início com o Windows (CFG-003, StartupTask)
 
-- [ ] Aceitar nas boas-vindas → *Configurações do Windows → Apps → Inicialização* mostra "ClipVault" ligado.
+- [ ] Aceitar nas boas-vindas → *Configurações do Windows → Apps → Inicialização* mostra "Clip-Vault" ligado.
 - [ ] Reiniciar a sessão → o app inicia na bandeja, sem janela.
 - [ ] Desligar pela tela do Windows → a seção Geral do ClipVault mostra "Desativado nas configurações de inicialização do Windows. Reative por lá." e não reativa sozinha (`DisabledByUser`).
 - [ ] Desligar e ligar pelo ClipVault → o estado do Windows acompanha.
