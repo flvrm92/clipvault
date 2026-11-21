@@ -1,0 +1,68 @@
+# Release packages — specs/09 §5. Builds the x64 + arm64 MSIX bundle and the Store upload,
+# and attaches them to a draft GitHub release. Submission to Partner Center stays manual (v1).
+name: Release
+
+on:
+  push:
+    tags: ['v[0-9]+.[0-9]+.[0-9]+']
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Version to package (X.Y.Z); no release is created for manual runs
+        required: true
+
+permissions:
+  contents: write
+
+env:
+  CARGO_TERM_COLOR: always
+  RUSTFLAGS: -D warnings
+
+jobs:
+  package:
+    name: MSIX · x64 + arm64
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: rustup show active-toolchain || rustup toolchain install
+      - run: rustup target add aarch64-pc-windows-msvc
+      - uses: Swatinem/rust-cache@v2
+      - uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-about
+      - name: Version
+        id: version
+        shell: pwsh
+        env:
+          EVENT: ${{ github.event_name }}
+          INPUT_VERSION: ${{ inputs.version }}
+          REF_NAME: ${{ github.ref_name }}
+        run: |
+          $version = if ($env:EVENT -eq 'workflow_dispatch') { $env:INPUT_VERSION } else { $env:REF_NAME.TrimStart('v') }
+          if ($version -notmatch '^\d+\.\d+\.\d+$') { throw "invalid version '$version'" }
+          "value=$version" >> $env:GITHUB_OUTPUT
+      - run: tools/release.ps1 -Version ${{ steps.version.outputs.value }}
+        shell: pwsh
+      # The tag must point at a commit whose Cargo.toml and notices are already up to date.
+      - name: Release commit is up to date
+        if: github.event_name == 'push'
+        shell: bash
+        run: test -z "$(git status --porcelain -- Cargo.toml Cargo.lock THIRD-PARTY-NOTICES.md)" || (git diff --stat && exit 1)
+      - uses: actions/upload-artifact@v4
+        with:
+          name: msix-${{ steps.version.outputs.value }}
+          path: |
+            target/msix/*.msixbundle
+            target/msix/*.msixupload
+      - name: Draft release
+        if: github.event_name == 'push'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "${{ github.ref_name }}" --draft --title "ClipVault ${{ steps.version.outputs.value }}" --notes "See CHANGELOG.md." target/msix/*.msixbundle target/msix/*.msixupload
