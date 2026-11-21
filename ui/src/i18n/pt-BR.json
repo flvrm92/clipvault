@@ -2,6 +2,10 @@
   "app": {
     "name": "ClipVault"
   },
+  "webview2": {
+    "title": "Não foi possível iniciar o ClipVault",
+    "missing": "O ClipVault precisa do Microsoft Edge WebView2 Runtime, que não está instalado neste computador.\n\nBaixe e instale o runtime \"Evergreen\" em:\nhttps://developer.microsoft.com/microsoft-edge/webview2/\n\nDepois, abra o ClipVault de novo."
+  },
   "tray": {
     "tooltip": "ClipVault",
     "tooltipPaused": "ClipVault — captura pausada",

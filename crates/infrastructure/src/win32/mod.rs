@@ -16,6 +16,7 @@ mod owner;
 mod process;
 mod startup;
 mod theme;
+mod webview2;
 mod window;
 
 pub use accent::{AccentColors, Rgb, system_accent};
@@ -27,3 +28,4 @@ pub use input::Win32KeystrokeSender;
 pub use listener::ClipboardListener;
 pub use startup::{MsixStartupTask, RunKeyStartup, has_package_identity, startup_manager};
 pub use theme::{SystemAppearance, system_appearance};
+pub use webview2::{show_error, webview2_version};
