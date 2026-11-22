@@ -1,19 +1,13 @@
-//! Native notifications (PST-005, HK-004).
+//! Native notifications (PST-005, PST-006, HK-004 — ADR-0010).
 
+use clipvault_infrastructure::win32::show_toast;
 use tauri::{AppHandle, Manager, Wry};
-use tauri_plugin_notification::NotificationExt;
 
 use crate::i18n::Translator;
 
 fn show(app: &AppHandle<Wry>, key: &str) {
     let body = app.state::<Translator>().t(key);
-    if let Err(error) = app
-        .notification()
-        .builder()
-        .title("ClipVault")
-        .body(body)
-        .show()
-    {
+    if let Err(error) = show_toast("ClipVault", &body) {
         tracing::warn!(%error, "notification could not be shown");
     }
 }

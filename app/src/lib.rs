@@ -63,7 +63,6 @@ pub fn run() -> tauri::Result<()> {
         .plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| {
             popup::show(app);
         }))
-        .plugin(tauri_plugin_notification::init())
         .plugin(tauri_plugin_opener::init())
         .manage(PopupState::default())
         .register_uri_scheme_protocol(protocol::SCHEME, |ctx, request| {
