@@ -18,6 +18,10 @@ $output = Join-Path $root 'THIRD-PARTY-NOTICES.md'
 
 Push-Location $root
 try {
+    # --offline below needs every crate's source (license texts) already downloaded,
+    # which a fresh checkout or a just-bumped Cargo.lock does not have.
+    & cargo fetch --locked
+    if ($LASTEXITCODE -ne 0) { throw "cargo fetch failed with exit code $LASTEXITCODE" }
     # cargo-about refuses PowerShell redirection (encoding); it writes the file itself.
     $rustFile = Join-Path ([System.IO.Path]::GetTempPath()) "clipvault-rust-notices-$PID.md"
     & cargo about generate --offline -m app/Cargo.toml -o $rustFile about.hbs
