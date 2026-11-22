@@ -51,7 +51,7 @@
 
 ## 5. Requisitos `[manual]`
 
-- [ ] **PST-006** — colar num app elevado (Bloco de Notas "Executar como administrador"): o conteúdo fica no clipboard e aparece "Conteúdo copiado. Cole com Ctrl+V."
+- [ ] **PST-006** — colar num app elevado (Bloco de Notas "Executar como administrador"): com o ClipVault sem elevação, o conteúdo fica no clipboard e aparece "Conteúdo copiado. Cole com Ctrl+V."; com o ClipVault também executado como administrador, o conteúdo é colado normalmente.
 - [ ] **PERF-001** — atalho → popup visível e focado sem atraso perceptível (meta p95 ≤ 150 ms); 20 aberturas seguidas sem falha.
 - [ ] **PERF-008** — com 5.000 itens, rolagem contínua sem travamentos.
 - [ ] **A11Y-005** — escala do Windows 100%, 150%, 200% e 300% e "Tamanho do texto" 150%: popup, configurações e boas-vindas sem cortes nem sobreposição.

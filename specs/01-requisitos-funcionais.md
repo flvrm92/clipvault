@@ -235,7 +235,7 @@ Com o popup aberto, `Alt + 1` … `Alt + 9` colam o 1º…9º item visível.
 Se a janela alvo foi fechada ou não pode receber foco, o conteúdo fica no clipboard, o popup fecha e uma notificação discreta informa "Conteúdo copiado. Cole com Ctrl+V."
 
 ### PST-006 · Apps elevados — M
-Se a janela alvo roda como administrador (UIPI bloqueia `SendInput`), o comportamento é o de PST-005. Documentar a limitação no "Sobre"/FAQ. `[manual]`
+Se a janela alvo roda como administrador e o ClipVault não (UIPI bloqueia `SendInput`), o comportamento é o de PST-005. Se o ClipVault também roda como administrador, a colagem funciona normalmente. Documentar a limitação no "Sobre"/FAQ. `[manual]`
 
 ### PST-007 · Fechar sem colar — M
 `Esc`, clique fora ou perda de foco fecham o popup sem alterar o clipboard.
