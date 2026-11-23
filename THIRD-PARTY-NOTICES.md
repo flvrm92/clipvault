@@ -1502,7 +1502,7 @@ DEALINGS IN THE SOFTWARE.
 ### MIT License
 
 Used by:
-- [cookie 0.18.2](https://github.com/SergioBenitez/cookie-rs)
+- [cookie 0.18.3](https://github.com/SergioBenitez/cookie-rs)
 
 ```text
 Copyright (c) 2017 Sergio Benitez
