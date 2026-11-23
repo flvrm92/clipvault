@@ -42,4 +42,5 @@ enforced = [
   "CMP-001", "CMP-003",
   # v1.1 — Popup arrastável
   "HK-006",
+  "MNT-006",
 ]

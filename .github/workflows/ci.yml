@@ -23,6 +23,9 @@ jobs:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v5
+        with:
+          # The release tags tell check-version which versions were already published (MNT-006).
+          fetch-depth: 0
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v5
         with:
@@ -47,6 +50,7 @@ jobs:
       - run: cargo test -p clipvault-infrastructure --test win32_hotkeys --locked -- --ignored
       - run: cargo xtask check-arch
       - run: cargo xtask trace-reqs
+      - run: cargo xtask check-version
       # Brand assets are generated from the master SVGs and committed (specs/07 §6).
       - run: cargo run -p gen-assets --locked -- --check
 

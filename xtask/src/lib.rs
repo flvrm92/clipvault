@@ -3,3 +3,4 @@
 pub mod arch;
 pub mod manifest;
 pub mod trace;
+pub mod version;
