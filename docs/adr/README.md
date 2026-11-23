@@ -14,3 +14,4 @@ Formato: contexto → decisão → alternativas → consequências. Status: `Pro
 | [0008](0008-inicio-com-windows.md) | Início com o Windows: StartupTask com fallback na chave Run | Aceita |
 | [0009](0009-avisos-de-licencas.md) | Avisos de licenças de terceiros gerados por ferramenta | Aceita |
 | [0010](0010-notificacoes-toast.md) | Notificações nativas por toast WinRT próprio | Aceita |
+| [0011](0011-versionamento.md) | Versão incrementada em cada mudança, verificada contra as tags | Aceita |

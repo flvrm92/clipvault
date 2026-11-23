@@ -73,6 +73,7 @@
 | MNT-003 | Cobertura mínima conforme [08](08-estrategia-de-testes.md). |
 | MNT-004 | Funções públicas de `domain` e `application` documentadas (`#![warn(missing_docs)]`). |
 | MNT-005 | Padrões de projeto apenas os catalogados em [04](04-padroes-de-projeto.md). |
+| MNT-006 | Toda mudança integrada à `main` declara em `[workspace.package]` do `Cargo.toml` uma versão **maior** que a última publicada (maior tag `vX.Y.Z`), porque a Store recusa um pacote com versão já enviada; o commit marcado com a própria tag é a exceção. O `CHANGELOG.md` tem a seção `## [X.Y.Z]` dessa versão. Regras de incremento em [09 §9](09-distribuicao-msix.md). Verificado por `cargo xtask check-version` no CI. |
 
 ## Compatibilidade (CMP)
 

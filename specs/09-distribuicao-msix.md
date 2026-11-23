@@ -1,6 +1,6 @@
 # 09 — Distribuição (Microsoft Store / MSIX)
 
-> Status: Aprovada · v1.0 · 2026-11-20
+> Status: Aprovada · v1.1 · 2026-11-23
 
 ## 1. Estratégia
 
@@ -141,10 +141,23 @@ tools/release.ps1 -Version 1.0.0
 
 ## 8. Checklist de release
 
-- [ ] Versão sincronizada e changelog atualizado.
+- [ ] Versão sincronizada e changelog datado (a seção `## [X.Y.Z] - Unreleased` recebe a data do envio).
 - [ ] Todos os testes e cobertura verdes; E2E verde.
 - [ ] Checklist manual executada (inclui apps elevados, multi-monitor, DPI 100/150/200%, Win10 e Win11, x64 e arm64).
 - [ ] WACK aprovado.
 - [ ] Instalação/atualização/desinstalação limpas (dados removidos na desinstalação).
 - [ ] Atualização a partir da versão anterior preserva histórico e snippets (migração).
 - [ ] Capturas de tela e textos da listagem atualizados.
+
+## 9. Versionamento
+
+- **Fonte única:** `[workspace.package].version` do `Cargo.toml` (`X.Y.Z`). O `tauri.conf.json` herda; o MSIX usa `X.Y.Z.0`, porque a Store exige revisão `0`.
+- **Publicadas:** cada envio à Store corresponde a uma tag `vX.Y.Z` no commit empacotado (dispara o workflow de release, §5).
+- **Toda mudança sobe a versão (MNT-006).** O PR que muda o app já traz a nova versão, acima da maior tag. Vários PRs antes do próximo envio compartilham a mesma versão ainda não publicada; o primeiro deles faz o incremento. O PR atualiza também a seção `## [X.Y.Z] - Unreleased` do `CHANGELOG.md` (o envio troca `Unreleased` pela data).
+- **Qual número sobe** (SemVer):
+  - **patch** (`1.0.0 → 1.0.1`): correção sem requisito novo;
+  - **minor** (`1.0.x → 1.1.0`): requisito novo ou mudança de comportamento compatível;
+  - **major** (`1.x → 2.0.0`): mudança incompatível, como dados que a versão anterior não lê mais.
+
+  Se a versão não publicada já tem o incremento suficiente (ex.: já é `1.1.0` e o PR é uma correção), ela fica como está.
+- Para subir: editar a versão no `Cargo.toml`, rodar `cargo update --workspace` (atualiza o `Cargo.lock`) e `cargo xtask check-version`.
