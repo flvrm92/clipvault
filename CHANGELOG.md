@@ -4,6 +4,11 @@ All notable changes to ClipVault are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and versions follow
 [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Fixed
+- The popup can be dragged by its header again; it reopens next to the caret or pointer.
+
 ## [1.0.0] - 2026-11-22
 
 First public release on the Microsoft Store.
