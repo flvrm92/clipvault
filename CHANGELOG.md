@@ -4,11 +4,15 @@ All notable changes to ClipVault are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and versions follow
 [Semantic Versioning](https://semver.org/).
 
-## [1.1.0] - Unreleased
+## [1.1.0] - 2026-11-23
 
 ### Added
 - The popup can be dragged by its header, including to another monitor; it still reopens next to
   the caret or pointer.
+
+### Security
+- Updated the `cookie` dependency to 0.18.3 (RUSTSEC-2026-0594). ClipVault was not affected: the
+  issue only occurs in processes that fork, which Windows does not do.
 
 ## [1.0.0] - 2026-11-22
 
