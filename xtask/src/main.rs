@@ -3,12 +3,13 @@
 //! Tasks:
 //! - `check-arch`  — enforces the layer dependency rule (specs/02 MNT-001).
 //! - `trace-reqs`  — requirement ↔ test traceability (specs/08 §4).
+//! - `check-version` — the version is above the latest release tag (specs/02 MNT-006).
 #![allow(clippy::print_stdout, clippy::print_stderr)]
 
 use std::path::{Path, PathBuf};
 use std::process::ExitCode;
 
-use xtask::{arch, trace};
+use xtask::{arch, trace, version};
 
 fn workspace_root() -> PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR")).join("..")
@@ -50,13 +51,25 @@ fn trace_reqs() -> anyhow::Result<bool> {
     Ok(report.is_ok())
 }
 
+fn check_version() -> anyhow::Result<bool> {
+    let problems = version::run(&workspace_root())?;
+    for p in &problems {
+        eprintln!("error: {p}");
+    }
+    if problems.is_empty() {
+        println!("check-version: OK — version is above the latest release tag");
+    }
+    Ok(problems.is_empty())
+}
+
 fn main() -> ExitCode {
     let task = std::env::args().nth(1);
     let result = match task.as_deref() {
         Some("check-arch") => check_arch(),
         Some("trace-reqs") => trace_reqs(),
+        Some("check-version") => check_version(),
         _ => {
-            eprintln!("usage: cargo xtask <check-arch|trace-reqs>");
+            eprintln!("usage: cargo xtask <check-arch|trace-reqs|check-version>");
             return ExitCode::from(2);
         }
     };

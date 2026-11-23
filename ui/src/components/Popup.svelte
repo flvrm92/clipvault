@@ -202,12 +202,13 @@
 <svelte:window {onkeydown} />
 
 <div class="popup">
-  <header data-tauri-drag-region>
-    <span class="brand" data-tauri-drag-region>
+  <!-- HK-006: drag from anywhere in the header except the menu button and its menu. -->
+  <header data-tauri-drag-region="deep">
+    <span class="brand">
       <BrandMark size={18} />
-      <span data-tauri-drag-region>{t('app.name')}</span>
+      <span>{t('app.name')}</span>
     </span>
-    <span class="menu-anchor">
+    <span class="menu-anchor" data-tauri-drag-region="false">
       <button
         type="button"
         class="icon-button"

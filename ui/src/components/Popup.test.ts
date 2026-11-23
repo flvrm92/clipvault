@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/svelte';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/svelte';
 import { describe, expect, it } from 'vitest';
 import { t } from '../i18n';
 import { fakeApi, imageItem, snippet, textItem } from '../test/fakeApi';
@@ -239,5 +239,21 @@ describe('Popup', () => {
     await press(',', { ctrlKey: true });
 
     expect(api.openSettings).toHaveBeenCalled();
+  });
+  it('[HK-006] the header drags the window; the menu button and its menu do not', async () => {
+    await open();
+    // Tauri's drag script follows the nearest `data-tauri-drag-region` up the tree:
+    // "deep" drags from any descendant, "false" blocks dragging.
+    const dragRegion = (el: Element) =>
+      el.closest('[data-tauri-drag-region]')?.getAttribute('data-tauri-drag-region');
+
+    const header = screen.getByRole('banner');
+    expect(dragRegion(header)).toBe('deep');
+    expect(dragRegion(within(header).getByText(t('app.name')))).toBe('deep');
+
+    const menuButton = screen.getByRole('button', { name: t('popup.menu.label') });
+    expect(dragRegion(menuButton)).toBe('false');
+    await fireEvent.click(menuButton);
+    for (const item of screen.getAllByRole('menuitem')) expect(dragRegion(item)).toBe('false');
   });
 });

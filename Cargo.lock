@@ -593,7 +593,7 @@ dependencies = [
 
 [[package]]
 name = "clipvault-app"
-version = "1.0.0"
+version = "1.1.0"
 dependencies = [
  "clipvault-application",
  "clipvault-domain",
@@ -614,7 +614,7 @@ dependencies = [
 
 [[package]]
 name = "clipvault-application"
-version = "1.0.0"
+version = "1.1.0"
 dependencies = [
  "clipvault-domain",
  "clipvault-test-support",
@@ -625,7 +625,7 @@ dependencies = [
 
 [[package]]
 name = "clipvault-domain"
-version = "1.0.0"
+version = "1.1.0"
 dependencies = [
  "proptest",
  "sha2 0.11.1",
@@ -635,7 +635,7 @@ dependencies = [
 
 [[package]]
 name = "clipvault-infrastructure"
-version = "1.0.0"
+version = "1.1.0"
 dependencies = [
  "clipvault-application",
  "clipvault-domain",
@@ -652,7 +652,7 @@ dependencies = [
 
 [[package]]
 name = "clipvault-test-support"
-version = "1.0.0"
+version = "1.1.0"
 dependencies = [
  "clipvault-application",
  "clipvault-domain",
@@ -691,9 +691,9 @@ checksum = "be95d4a884358a21a199689323c29e9256b4a1b315e22f183d155422041d3a9a"
 
 [[package]]
 name = "cookie"
-version = "0.18.2"
+version = "0.18.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1a373e3602691c3cdea496d2f0ee5935151e6168fe87739483c463db1b2f2f87"
+checksum = "d55f2d6c30eeec7d5c6f98bd4395d4abb1895629eab97ee6522d340623615f8a"
 dependencies = [
  "time",
  "version_check",
@@ -1513,7 +1513,7 @@ dependencies = [
 
 [[package]]
 name = "gen-assets"
-version = "1.0.0"
+version = "1.1.0"
 dependencies = [
  "anyhow",
  "image",
@@ -5697,7 +5697,7 @@ checksum = "ec7a2a501ed189703dba8b08142f057e887dfc4b2cc4db2d343ac6376ba3e0b9"
 
 [[package]]
 name = "xtask"
-version = "1.0.0"
+version = "1.1.0"
 dependencies = [
  "anyhow",
  "cargo_metadata 0.23.1",

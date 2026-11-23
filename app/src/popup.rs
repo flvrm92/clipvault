@@ -107,3 +107,46 @@ pub fn toggle(app: &AppHandle<Wry>) {
         show(app);
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use serde_json::Value;
+
+    /// Permissions each capability file grants, keyed by window label.
+    fn grants(capability: &str, window: &str, permission: &str) -> bool {
+        let Ok(json) = serde_json::from_str::<Value>(capability) else {
+            panic!("capability file is not valid JSON");
+        };
+        let listed = |key: &str, wanted: &str| {
+            json[key]
+                .as_array()
+                .is_some_and(|values| values.iter().any(|v| v.as_str() == Some(wanted)))
+        };
+        listed("windows", window) && listed("permissions", permission)
+    }
+
+    const CAPABILITIES: [&str; 2] = [
+        include_str!("../capabilities/default.json"),
+        include_str!("../capabilities/popup.json"),
+    ];
+
+    fn any_grants(window: &str, permission: &str) -> bool {
+        CAPABILITIES.iter().any(|c| grants(c, window, permission))
+    }
+
+    #[test]
+    fn hk_006_only_the_popup_may_be_dragged() {
+        const DRAG: &str = "core:window:allow-start-dragging";
+        assert!(any_grants(super::POPUP, DRAG));
+        assert!(!any_grants("settings", DRAG));
+        assert!(!any_grants("welcome", DRAG));
+    }
+
+    #[test]
+    fn hk_006_double_clicking_the_header_does_not_maximize_the_popup() {
+        assert!(!any_grants(
+            super::POPUP,
+            "core:window:allow-internal-toggle-maximize"
+        ));
+    }
+}
