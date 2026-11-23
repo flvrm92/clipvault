@@ -1,6 +1,6 @@
 # 01 — Requisitos funcionais
 
-> Status: Aprovada · v1.0 · 2026-11-20
+> Status: Aprovada · v1.1 · 2026-11-23
 >
 > Prioridade MoSCoW: **M** Must · **S** Should · **C** Could · **W** Won't (v1.0).
 > Cada critério de aceite (CA) deve ser coberto por ao menos um teste automatizado, salvo indicação `[manual]`.
@@ -269,6 +269,22 @@ Se o registro no sistema falhar (atalho em uso por outro app), o atalho anterior
 
 ### HK-005 · Posição do popup — M
 O popup abre próximo ao cursor de texto (caret) da janela alvo quando obtível; senão, próximo ao ponteiro do mouse. Sempre totalmente dentro da área de trabalho do monitor correspondente.
+
+### HK-006 · Arrastar o popup — S
+Com o popup aberto, o usuário pode arrastá-lo com o botão esquerdo do mouse pelo **cabeçalho** (marca e espaço livre) para qualquer lugar da tela, inclusive outro monitor.
+- O botão "⋯" e o menu que ele abre continuam clicáveis e não iniciam o arraste.
+- Arrastar não fecha o popup nem altera o clipboard; a busca, a seleção e a janela alvo da colagem (PST-001) continuam as mesmas.
+- Duplo clique no cabeçalho não maximiza o popup.
+- A nova posição vale só até o popup fechar: ao reabrir, a posição volta a seguir HK-005.
+- Só o popup recebe a permissão de arrastar janela (SEC-002).
+
+```gherkin
+Cenário: Popup arrastado volta para perto do caret ao reabrir
+  Dado que o usuário abriu o popup pelo atalho global
+  Quando arrasta o popup pelo cabeçalho para outro canto da tela
+  Então o popup continua aberto na nova posição
+  E ao fechar e reabrir pelo atalho, o popup abre perto do caret (HK-005)
+```
 
 ---
 

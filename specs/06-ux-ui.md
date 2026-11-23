@@ -1,6 +1,6 @@
 # 06 — UX / UI
 
-> Status: Aprovada · v1.0 · 2026-11-20
+> Status: Aprovada · v1.1 · 2026-11-23
 
 ## 1. Princípios
 
@@ -12,7 +12,7 @@
 
 ## 2. Popup de histórico
 
-Tamanho padrão **380 × 520 px** (redimensionável, tamanho lembrado). Sem barra de título; arrastável pelo cabeçalho.
+Tamanho padrão **380 × 520 px** (redimensionável, tamanho lembrado). Sem barra de título; arrastável pelo cabeçalho (HK-006).
 
 ```
 ┌──────────────────────────────────────────┐
@@ -69,6 +69,7 @@ Tamanho padrão **380 × 520 px** (redimensionável, tamanho lembrado). Sem barr
 - Abre perto do caret/mouse (HK-005), com animação de entrada 120 ms (fade + 4 px slide), desativada com movimento reduzido.
 - Aberto pela bandeja, a janela em foco é a própria barra de tarefas. Nesse caso, a janela alvo da colagem é a primeira janela de aplicativo visível na ordem de empilhamento (z-order), que é aquela em que o usuário estava trabalhando.
 - Menu "⋯" do cabeçalho: Pausar/Retomar captura e Limpar histórico (com confirmação). "Configurações" entra no M6.
+- Arrastável pelo cabeçalho (HK-006); o botão "⋯" não arrasta. A posição arrastada não é lembrada: cada abertura segue HK-005.
 - Fecha ao perder foco, `Esc` ou após colar.
 - Ao reabrir: busca limpa, filtro "Tudo", foco no 1º item.
 

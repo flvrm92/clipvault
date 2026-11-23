@@ -1,6 +1,6 @@
 # 02 — Requisitos não funcionais
 
-> Status: Aprovada · v1.0 · 2026-11-20
+> Status: Aprovada · v1.1 · 2026-11-23
 >
 > Medições de desempenho em máquina de referência: Windows 11, CPU 4 núcleos ~2,5 GHz, 8 GB RAM, SSD.
 
@@ -46,7 +46,7 @@
 | ID | Requisito |
 |----|-----------|
 | SEC-001 | Tauri com **CSP restritiva** (`default-src 'self'`; sem `unsafe-eval`; imagens apenas `self`/`asset:` do diretório de dados). |
-| SEC-002 | **Capabilities do Tauri mínimas**: apenas os comandos próprios expostos; sem acesso genérico a FS/shell a partir do frontend. |
+| SEC-002 | **Capabilities do Tauri mínimas**: apenas os comandos próprios expostos; sem acesso genérico a FS/shell a partir do frontend. Única permissão de janela além do padrão: `core:window:allow-start-dragging`, só para o popup (HK-006). |
 | SEC-003 | O frontend nunca recebe caminhos absolutos arbitrários; imagens são servidas por protocolo customizado (`clip://image/<id>`) que valida o ID. |
 | SEC-004 | Todas as entradas vindas do frontend são validadas no backend (tipos de domínio com construtores validados). |
 | SEC-005 | Consultas SQL somente parametrizadas. |
